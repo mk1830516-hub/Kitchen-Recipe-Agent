@@ -270,31 +270,108 @@ if "messages" not in st.session_state:
         {"role": m["role"], "content": m["content"]} for m in st.session_state.memory
     ]
 
+if "user_type" not in st.session_state:
+    st.session_state.user_type = "Normal"
+
+USER_AVATAR = "🧑"
+ASSISTANT_AVATAR = "🍳"
+
+# ---- Global styling ---------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    .sidebar-card {
+        text-align: center;
+        padding: 18px 8px 14px 8px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+        margin-bottom: 14px;
+    }
+    .sidebar-icon { font-size: 44px; line-height: 1; }
+    .sidebar-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: white;
+        margin-top: 6px;
+    }
+    .sidebar-subtitle {
+        font-size: 12.5px;
+        color: rgba(255,255,255,0.9);
+        margin-top: 4px;
+    }
+    .hero-banner {
+        padding: 22px 20px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+        margin-bottom: 18px;
+    }
+    .hero-title {
+        font-size: 30px;
+        font-weight: 800;
+        color: white;
+        margin: 0;
+    }
+    .hero-subtitle {
+        font-size: 14px;
+        color: rgba(255,255,255,0.95);
+        margin-top: 4px;
+    }
+    .history-item {
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.05);
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+    .history-time {
+        font-size: 11px;
+        opacity: 0.6;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ---- Sidebar --------------------------------------------------------------
 with st.sidebar:
     st.markdown(
-        f"<div style='text-align:center; font-size:64px;'>{APP_ICON}</div>",
+        f"""
+        <div class="sidebar-card">
+            <div class="sidebar-icon">{APP_ICON}</div>
+            <div class="sidebar-title">{APP_TITLE}</div>
+            <div class="sidebar-subtitle">Your AI sous-chef — recipes, ingredients, and cooking tips.</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f"<h2 style='text-align:center; margin-top:-10px;'>{APP_TITLE}</h2>",
-        unsafe_allow_html=True,
-    )
-    st.caption("Your AI sous-chef — recipes, ingredients, and cooking tips.")
 
-    st.divider()
-
-    user_type = st.radio(
-        "I'm cooking for:",
+    st.session_state.user_type = st.radio(
+        "🍽️ I'm cooking for:",
         options=["Normal", "Diabetic / Health-conscious"],
-        index=0,
+        index=["Normal", "Diabetic / Health-conscious"].index(st.session_state.user_type),
         help="Changes how ingredients and tips are tailored.",
     )
 
     st.divider()
 
-    st.subheader("Chat history")
-    st.caption(f"{len(st.session_state.messages)} messages saved")
+    st.subheader("💬 Chat history")
+    msg_count = len(st.session_state.messages)
+    st.caption(f"{msg_count} message{'s' if msg_count != 1 else ''} in this session")
+
+    user_msgs = [m for m in st.session_state.memory if m["role"] == "user"]
+    if user_msgs:
+        with st.expander(f"View recent questions ({len(user_msgs)})", expanded=False):
+            for m in reversed(user_msgs[-15:]):
+                time_label = m.get("timestamp", "")[11:16]
+                preview = m["content"][:60] + ("…" if len(m["content"]) > 60 else "")
+                st.markdown(
+                    f"""<div class="history-item">
+                    <span class="history-time">{time_label}</span><br>{preview}
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+    else:
+        st.caption("No questions asked yet — say hi below!")
 
     if st.button("🗑️ Clear chat history", use_container_width=True):
         st.session_state.confirm_clear = True
@@ -316,27 +393,37 @@ with st.sidebar:
     st.caption("Backend order: Groq → Cohere → Gemini (auto fallback)")
 
 # ---- Main chat window -------------------------------------------------------
-st.title(f"{APP_ICON} {APP_TITLE}")
-st.caption("Ask for any recipe, and I'll format it into clean, easy-to-read tables.")
+st.markdown(
+    f"""
+    <div class="hero-banner">
+        <p class="hero-title">{APP_ICON} {APP_TITLE}</p>
+        <p class="hero-subtitle">Ask for any recipe — ingredients always come back in a clean table, tailored to you.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    avatar = USER_AVATAR if msg["role"] == "user" else ASSISTANT_AVATAR
+    with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
 user_prompt = st.chat_input("What would you like to cook today?")
 
 if user_prompt:
+    user_type = st.session_state.user_type
+
     # 1) Save + show the user's message BEFORE calling the AI
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     append_and_save("user", user_prompt, user_type)
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar=USER_AVATAR):
         st.markdown(user_prompt)
 
     # 2) Build context and call the AI (with fallback)
     system_prompt = build_system_prompt(user_type)
     history_for_model = st.session_state.messages[:-1][-10:]  # last 10 turns, excluding current
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
         with st.spinner("Cooking up a response..."):
             reply, backend_used = get_ai_response(system_prompt, history_for_model, user_prompt)
         st.markdown(reply)
@@ -346,3 +433,6 @@ if user_prompt:
     # 3) Save the assistant's reply AFTER the AI responds
     st.session_state.messages.append({"role": "assistant", "content": reply})
     append_and_save("assistant", reply, user_type)
+
+    # 4) Rerun so the sidebar (message count + history list) reflects this exchange immediately
+    st.rerun()
