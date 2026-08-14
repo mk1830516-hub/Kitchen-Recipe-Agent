@@ -1,0 +1,16 @@
+# Secrets - NEVER commit these
+.env
+.streamlit/secrets.toml
+
+# Chat memory / user data - contains real conversations, keep out of public repo
+chat_memory.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS/editor junk
+.DS_Store
+.vscode/
