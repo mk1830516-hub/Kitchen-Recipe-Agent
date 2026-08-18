@@ -854,9 +854,18 @@ def render_ingredients():
             elif any(char.isdigit() for char in cleaned_name):
                 st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits.")
             else:
-                st.session_state.data["ingredients"].append({"name": cleaned_name})
-                save_data()
-                st.rerun()
+                # --- Duplicate check yahan add kiya gaya hai ---
+                is_duplicate = any(
+                    ing["name"].lower() == cleaned_name.lower() 
+                    for ing in st.session_state.data["ingredients"]
+                )
+                
+                if is_duplicate:
+                    st.warning("⚠️ You have already added it!")
+                else:
+                    st.session_state.data["ingredients"].append({"name": cleaned_name})
+                    save_data()
+                    st.rerun()
 
     ingredients = st.session_state.data["ingredients"]
     if not ingredients:
@@ -872,7 +881,6 @@ def render_ingredients():
                     ingredients.pop(idx)
                     save_data()
                     st.rerun()
-
 
 # ---------------------------------------------------------------------------
 # PAGE: Shopping List (string name + integer/float amount + unit)
@@ -941,12 +949,21 @@ def render_shopping_list():
         elif any(char.isdigit() for char in cleaned_item):
             st.error("Shopping item name must be text (strings only) and cannot contain numbers or digits.")
         else:
-            st.session_state.data["shopping_list"].append(
-                {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
+            # --- Duplicate check yahan add kiya gaya hai ---
+            is_duplicate = any(
+                shop["item"].lower() == cleaned_item.lower() 
+                for shop in st.session_state.data["shopping_list"]
             )
-            save_data()
-            st.session_state._reset_shop_form = True
-            st.rerun()
+            
+            if is_duplicate:
+                st.warning("⚠️ You have already added it!")
+            else:
+                st.session_state.data["shopping_list"].append(
+                    {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
+                )
+                save_data()
+                st.session_state._reset_shop_form = True
+                st.rerun()
 
     shopping = st.session_state.data["shopping_list"]
     if not shopping:
