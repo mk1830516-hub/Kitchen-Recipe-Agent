@@ -56,7 +56,7 @@ NAV_ITEMS = [
     ("Theme Customize", "🎨"),
 ]
 
-UNIT_OPTIONS = ["g", "kg", "ml", "l", "pieces", "cups", "tbsp", "tsp", "pinch"]
+UNIT_OPTIONS = ["kg", "g", "litres", "ml", "pieces", "cups", "tbsp", "tsp", "pinch"]
 
 
 def get_key(name: str) -> str | None:
@@ -75,55 +75,34 @@ GEMINI_API_KEY = get_key("GEMINI_API_KEY")
 
 
 # ---------------------------------------------------------------------------
-# System prompt (Multilingual & Profile-aware)
+# System prompt (Smart, Multilingual, Strict Domain & Budget/Shopping aware)
 # ---------------------------------------------------------------------------
 
 USER_TYPES = [
     "Normal / Adult",
-    "Child",
     "Older Adult",
-    "Pregnant",
-    "Diabetic / Health-conscious",
-    "Other allergy / dietary restriction",
+    "Health-conscious / Fitness",
 ]
 
 
-def build_system_prompt(user_type: str, extra_note: str = "") -> str:
-    base = f"""You are "{APP_TITLE}", a friendly, smart, professional AI chef.
+def build_system_prompt(user_type: str) -> str:
+    base = f"""You are "{APP_TITLE}", a smart, professional personal AI chef and kitchen assistant.
 Tagline: "{APP_TAGLINE}"
 
-MULTILINGUAL SUPPORT:
-- You can converse and respond fluently in English, Urdu, Sindhi, and other languages. 
-- If a user asks about recipes, ingredients, or cooking in Urdu or Sindhi (e.g., "Biryani banane ka tarika bataen" or similar), you MUST respond helpfully in that exact language with proper culinary steps and ingredients.
-
-STRICT DOMAIN:
-You ONLY help with: recipes, cooking, food, ingredients, dishes, meal
-planning, kitchen techniques, food substitutions, and cooking equipment
-related to food prep. If the user asks about anything unrelated (coding,
-homework, politics, news, general trivia, personal tasks unrelated to
-food), reply with EXACTLY this and nothing else:
-"Sorry! 👩‍🍳 I'm {APP_TITLE}, your Smart Kitchen & Food Assistant. I can only help with recipes, cooking, ingredients, dishes, meal planning, substitutions, and kitchen-related questions. What would you like to cook today?"
-
-CONVERSATION STYLE:
-- If the user greets or makes small talk, respond warmly and briefly in plain text, asking what they'd like to cook.
-- If the user gives ingredients (e.g. "I have 5 kg chicken, 2 litres yogurt"), analyze them and suggest 1-3 suitable dishes with approximate times and quantities.
-- Remember conversation context so the user doesn't have to repeat themselves.
-- For any medical or patient context, give general food information only — never diagnose or claim a food cures/treats a condition — and advise consulting a doctor or dietitian."""
+BEHAVIOR & LANGUAGE GUIDELINES:
+- Adapt naturally to whatever language or script the user writes in (English, Urdu, Roman Urdu, Sindhi, etc.). If the user asks in Urdu or Roman Urdu, reply appropriately in that same language or script.
+- Keep your answers strictly focused on cooking, recipes, ingredients, kitchen requirements, shopping lists, quantities, and food budgets.
+- If the user asks about anything unrelated to food, cooking, or kitchen management (such as coding, general news, politics, homework, etc.), politely apologize and decline, reminding them that you are only a kitchen assistant.
+- Provide clear quantities, measurements, step-by-step cooking instructions, ingredient sources or substitutions when helpful, and budget-conscious recommendations aligned with kitchen inventory and shopping lists."""
 
     profile_notes = {
-        "Normal / Adult": "User is a regular adult. Keep recipes practical for everyday cooking.",
-        "Child": "User is cooking for a CHILD. Prefer milder spices, softer textures, kid-friendly portions, and check for choking hazards.",
-        "Older Adult": "User is cooking for an OLDER ADULT. Keep textures soft, easy-to-chew, and lower in sodium where possible.",
-        "Pregnant": "User is PREGNANT. Avoid raw/undercooked items and unpasteurized dairy.",
-        "Diabetic / Health-conscious": "User is DIABETIC / HEALTH-CONSCIOUS. Include lower-sugar/lower-carb alternatives, healthier cooking methods, and estimated nutrition notes.",
-        "Other allergy / dietary restriction": "User has a specific dietary restriction or allergy. Strictly avoid that ingredient.",
+        "Normal / Adult": "User is a regular adult cook. Keep recipes practical and flavorful.",
+        "Older Adult": "User is cooking for an older adult. Keep meals easily digestible, balanced, and lower in heavy sodium/spices.",
+        "Health-conscious / Fitness": "User is health-conscious. Focus on clean ingredients, balanced macros, and nutritious meal planning.",
     }
 
     extra = profile_notes.get(user_type, profile_notes["Normal / Adult"])
-    if extra_note.strip():
-        extra += f"\n\nSpecific detail / age / restriction from user: \"{extra_note.strip()}\"."
-
-    return base + extra
+    return base + "\n\n" + extra
 
 
 # ---------------------------------------------------------------------------
@@ -243,11 +222,10 @@ def get_ai_response(system_prompt: str, history: list, user_prompt: str) -> tupl
 
 def ask_agent(user_prompt: str) -> None:
     user_type = st.session_state.user_type
-    extra_note = st.session_state.get("profile_note", "")
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     append_and_save("user", user_prompt, user_type)
 
-    system_prompt = build_system_prompt(user_type, extra_note)
+    system_prompt = build_system_prompt(user_type)
     history_for_model = st.session_state.messages[:-1][-10:]
     reply, backend_used = get_ai_response(system_prompt, history_for_model, user_prompt)
 
@@ -272,9 +250,6 @@ if "messages" not in st.session_state:
 
 if "user_type" not in st.session_state:
     st.session_state.user_type = "Normal / Adult"
-
-if "profile_note" not in st.session_state:
-    st.session_state.profile_note = ""
 
 if "page" not in st.session_state:
     st.session_state.page = "Home"
@@ -344,12 +319,6 @@ st.markdown(
         background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
         font-size: 12px; font-weight: 700; color: white;
     }}
-    .info-card {{
-        border-radius: 14px; padding: 14px 16px;
-        background: color-mix(in srgb, var(--accent) 8%, white);
-        border: 1px solid color-mix(in srgb, var(--accent) 20%, white);
-        margin-bottom: 10px;
-    }}
     .chip {{
         display: inline-block; padding: 6px 12px; border-radius: 999px;
         background: color-mix(in srgb, var(--accent) 12%, white);
@@ -367,7 +336,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — Branding, Navigation, Profile & Stored Conversation History
+# Sidebar — Branding, Navigation, Profile & Linked Chat History
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
@@ -396,22 +365,11 @@ with st.sidebar:
     st.divider()
 
     st.session_state.user_type = st.selectbox(
-        "🍽️ Cooking for:",
+        "🍽️ Kitchen Profile:",
         options=USER_TYPES,
         index=USER_TYPES.index(st.session_state.user_type),
-        help="Tailors recipes for children, older adults, patients, or specific dietary profiles.",
+        help="Tailors recipes for general cooking, older adults, or health-conscious meals.",
     )
-
-    if st.session_state.user_type == "Child":
-        st.session_state.profile_note = st.text_input(
-            "Child's Age", value=st.session_state.profile_note, placeholder="e.g. 5 years old"
-        )
-    elif st.session_state.user_type == "Other allergy / dietary restriction":
-        st.session_state.profile_note = st.text_input(
-            "Specify Restriction", value=st.session_state.profile_note, placeholder="e.g. nut allergy, gluten-free"
-        )
-    else:
-        st.session_state.profile_note = ""
 
     st.divider()
     st.subheader("💬 Chat History")
@@ -424,31 +382,43 @@ with st.sidebar:
             clear_chat_history()
             st.rerun()
             
-        # Display stored history in sidebar with individual delete capability
-        user_turns = [c for c in chats if c["role"] == "user"]
-        for idx, turn in enumerate(reversed(user_turns[-8:])):
-            snippet = turn["content"][:32] + ("..." if len(turn["content"]) > 32 else "")
+        # Display stored history in sidebar. Deleting a turn deletes both user prompt and assistant reply.
+        # Group conversations into pairs (user prompt + assistant response)
+        pairs = []
+        i = 0
+        while i < len(chats):
+            if chats[i]["role"] == "user":
+                u_turn = chats[i]
+                a_turn = chats[i+1] if (i+1 < len(chats) and chats[i+1]["role"] == "assistant") else None
+                pairs.append((u_turn, a_turn))
+                i += 2 if a_turn else 1
+            else:
+                i += 1
+
+        for idx, (u_turn, a_turn) in enumerate(reversed(pairs[-8:])):
+            snippet = u_turn["content"][:32] + ("..." if len(u_turn["content"]) > 32 else "")
             col_txt, col_del = st.columns([4, 1])
             with col_txt:
-                st.markdown(f"<div class='history-card'><b>{turn.get('user_type','Normal')}</b><br>{snippet}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='history-card'><b>{u_turn.get('user_type','Normal')}</b><br>{snippet}</div>", unsafe_allow_html=True)
             with col_del:
-                if st.button("❌", key=f"del_turn_{idx}", help="Delete this message"):
-                    st.session_state.data["conversations"] = [c for c in chats if c != turn]
+                if st.button("❌", key=f"del_pair_{idx}", help="Delete this conversation turn"):
+                    # Remove from persistent conversations list and sync session messages
+                    if u_turn in st.session_state.data["conversations"]:
+                        st.session_state.data["conversations"].remove(u_turn)
+                    if a_turn and a_turn in st.session_state.data["conversations"]:
+                        st.session_state.data["conversations"].remove(a_turn)
                     save_data()
+                    st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in st.session_state.data["conversations"]]
                     st.rerun()
 
 
 # ---------------------------------------------------------------------------
-# PAGE: Home (Dynamic options based on Profile)
+# PAGE: Home
 # ---------------------------------------------------------------------------
 
 def render_home():
     current_profile = st.session_state.user_type
-    age_note = st.session_state.profile_note
-    
-    profile_badge = f"Cooking for: {current_profile}"
-    if age_note:
-        profile_badge += f" ({age_note})"
+    profile_badge = f"Profile: {current_profile}"
 
     st.markdown(
         f"""
@@ -456,18 +426,17 @@ def render_home():
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
             <p class="hero-title">What would you like to cook today?</p>
-            <p class="hero-subtitle">Ask naturally in English, Urdu, Sindhi or any language. Tailored precisely to your dietary needs!</p>
+            <p class="hero-subtitle">Ask naturally in any language. Get precise quantities, ingredients, sources, and budget-friendly guidance!</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Input text box for quick recipes
     input_col, btn_col = st.columns([4, 1])
     with input_col:
         home_input = st.text_input(
             "quick_prompt",
-            placeholder="e.g. I have 4 kg chicken, 2 litres yogurt — what can I make? (or write in Urdu/Sindhi)",
+            placeholder="e.g., 6 kg chicken, 5 litres milk — what can I make? (or ask in Urdu/Roman Urdu)",
             label_visibility="collapsed",
         )
     with btn_col:
@@ -478,37 +447,14 @@ def render_home():
         st.rerun()
 
     st.write("")
-    st.subheader("💡 Tailored Quick Suggestions")
+    st.subheader("💡 Quick Suggestions")
     
-    # Dynamic suggestions based on user profile selected in sidebar
-    if current_profile == "Child":
-        ideas = [
-            ("🥣", "Milder veggie chicken soup (Kid-friendly)"),
-            ("🥔", "Mashed potato & soft cheese bake"),
-            ("🍳", "Scrambled eggs with mild cheese"),
-            ("🥞", "Soft banana oat pancakes"),
-        ]
-    elif current_profile == "Older Adult":
-        ideas = [
-            ("🍲", "Soft chicken vegetable stew"),
-            ("🍚", "Easy digestible khichdi with mild spices"),
-            ("🥣", "Warm lentil soup (Low sodium)"),
-            ("🥕", "Steamed soft carrots & potatoes"),
-        ]
-    elif current_profile == "Diabetic / Health-conscious":
-        ideas = [
-            ("🥗", "High-protein grilled chicken salad"),
-            ("🥦", "Low-carb steamed stir-fry veggies"),
-            ("🐟", "Baked fish with lemon and herbs"),
-            ("🥣", "Lentil soup with olive oil"),
-        ]
-    else:
-        ideas = [
-            ("🍗", "Quick chicken curry dinner"),
-            ("🍛", "Traditional Chicken Biryani"),
-            ("🍝", "30-minute creamy pasta"),
-            ("🥘", "Healthy family vegetable rice"),
-        ]
+    ideas = [
+        ("🍗", "Quick chicken curry dinner"),
+        ("🍛", "Traditional Chicken Biryani (6 kg batch)"),
+        ("🍝", "30-minute creamy pasta"),
+        ("🥘", "Healthy family vegetable rice"),
+    ]
 
     cols = st.columns(2)
     for idx, (emoji, label) in enumerate(ideas):
@@ -521,11 +467,11 @@ def render_home():
         st.write("")
         st.subheader("🥕 From your pantry ingredients")
         ing_list = st.session_state.data["ingredients"]
-        chips_html = "".join(f'<span class="chip">{i["amount"]:g} {i["unit"]} {i["name"]}</span>' for i in ing_list)
+        chips_html = "".join(f'<span class="chip">{i["amount"]} {i["unit"]} {i["name"]}</span>' for i in ing_list)
         st.markdown(chips_html, unsafe_allow_html=True)
         if st.button("Generate recipes using my ingredients", type="primary"):
-            summary_str = ", ".join(f"{i['amount']:g} {i['unit']} {i['name']}" for i in ing_list)
-            ask_agent(f"I have these pantry items: {summary_str}. What can I cook?")
+            summary_str = ", ".join(f"{i['amount']} {i['unit']} {i['name']}" for i in ing_list)
+            ask_agent(f"I have these pantry items: {summary_str}. What can I cook according to my kitchen requirements and budget?")
             st.rerun()
 
 
@@ -538,7 +484,7 @@ def render_chat():
         f"""
         <div class="hero-banner" style="padding: 18px 24px;">
             <p class="hero-title" style="font-size:22px;">👩‍🍳 AI Chef Chat</p>
-            <p class="hero-subtitle">Ask questions, request recipes in Urdu/Sindhi/English, or modify dishes.</p>
+            <p class="hero-subtitle">Ask questions, request recipes, check quantities, or manage kitchen requirements.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -548,7 +494,7 @@ def render_chat():
         avatar = USER_AVATAR if msg["role"] == "user" else ASSISTANT_AVATAR
         with st.chat_message(msg["role"], avatar=avatar):
             st.markdown(msg["content"])
-            if msg["role"] == "assistant" and "|" in msg["content"]:
+            if msg["role"] == "assistant":
                 if st.button("💾 Save this recipe", key=f"save_{i}"):
                     title = msg["content"].split("\n")[0][:60]
                     st.session_state.data["saved_recipes"].append(
@@ -561,7 +507,7 @@ def render_chat():
                     save_data()
                     st.toast("Recipe saved successfully!")
 
-    user_prompt = st.chat_input("Ask anything about cooking (in any language)...")
+    user_prompt = st.chat_input("Ask anything about cooking, quantities, or budget...")
     if user_prompt:
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(user_prompt)
@@ -572,26 +518,33 @@ def render_chat():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (With Datatypes & Exact Units)
+# PAGE: My Ingredients (Strict string name, integer/float amounts & units)
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add items with exact amounts and units (e.g. 5 kg, 2 litres, 500 g).")
+    st.caption("Add items with exact string names and integer/float quantities (e.g., 6 kg, 5 litres, 500 g).")
 
     with st.form("add_ingredient", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-        name = c1.text_input("Ingredient Name", placeholder="e.g. Chicken or Milk")
-        amount = c2.number_input("Amount", min_value=0.1, step=0.5, format="%.2f", value=1.0)
-        unit = c3.selectbox("Unit / Datatype", UNIT_OPTIONS)
+        name = c1.text_input("Ingredient Name (Letters only)", placeholder="e.g. Chicken")
+        amount = c2.number_input("Amount (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=1.0)
+        unit = c3.selectbox("Unit", UNIT_OPTIONS)
         submitted = c4.form_submit_button("➕ Add", use_container_width=True)
 
-        if submitted and name.strip():
-            st.session_state.data["ingredients"].append(
-                {"name": name.strip(), "amount": amount, "unit": unit}
-            )
-            save_data()
-            st.rerun()
+        if submitted:
+            cleaned_name = name.strip()
+            # Validate name contains no numbers/digits
+            if not cleaned_name:
+                st.error("Please enter a valid ingredient name.")
+            elif any(char.isdigit() for char in cleaned_name):
+                st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits like float/int.")
+            else:
+                st.session_state.data["ingredients"].append(
+                    {"name": cleaned_name, "amount": amount, "unit": unit}
+                )
+                save_data()
+                st.rerun()
 
     ingredients = st.session_state.data["ingredients"]
     if not ingredients:
@@ -601,7 +554,7 @@ def render_ingredients():
         for idx, ing in enumerate(ingredients):
             col_info, col_del = st.columns([5, 1])
             with col_info:
-                st.markdown(f"**{ing['name']}** — `{ing['amount']:g} {ing['unit']}`")
+                st.markdown(f"**{ing['name']}** — `{ing['amount']} {ing['unit']}`")
             with col_del:
                 if st.button("🗑️", key=f"del_ing_{idx}"):
                     ingredients.pop(idx)
@@ -610,26 +563,32 @@ def render_ingredients():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: Shopping List (With Quantities & Amounts)
+# PAGE: Shopping List (Strict string item name, integer/float quantity & units)
 # ---------------------------------------------------------------------------
 
 def render_shopping_list():
     st.subheader("🛒 Shopping List")
-    st.caption("Manage items you need to buy with exact quantities.")
+    st.caption("Manage items you need to buy with string names, integer/float quantities, and proper units.")
 
     with st.form("add_shopping", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-        item = c1.text_input("Shopping Item", placeholder="e.g. Olive Oil")
-        amount = c2.number_input("Quantity", min_value=0.1, step=0.5, format="%.2f", value=1.0)
+        item = c1.text_input("Shopping Item (Letters only)", placeholder="e.g. Olive Oil")
+        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=1.0)
         unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit")
         submitted = c4.form_submit_button("➕ Add Item", use_container_width=True)
 
-        if submitted and item.strip():
-            st.session_state.data["shopping_list"].append(
-                {"item": item.strip(), "amount": amount, "unit": unit, "bought": False}
-            )
-            save_data()
-            st.rerun()
+        if submitted:
+            cleaned_item = item.strip()
+            if not cleaned_item:
+                st.error("Please enter a valid shopping item name.")
+            elif any(char.isdigit() for char in cleaned_item):
+                st.error("Shopping item name must be text (strings only) and cannot contain numbers or digits.")
+            else:
+                st.session_state.data["shopping_list"].append(
+                    {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
+                )
+                save_data()
+                st.rerun()
 
     shopping = st.session_state.data["shopping_list"]
     if not shopping:
@@ -645,7 +604,7 @@ def render_shopping_list():
                     save_data()
             with col_text:
                 style = "text-decoration: line-through; opacity: 0.6;" if shop["bought"] else ""
-                st.markdown(f"<span style='{style}'><b>{shop['item']}</b> — {shop['amount']:g} {shop['unit']}</span>", unsafe_allow_html=True)
+                st.markdown(f"<span style='{style}'><b>{shop['item']}</b> — {shop['amount']} {shop['unit']}</span>", unsafe_allow_html=True)
             with col_del:
                 if st.button("🗑️", key=f"del_shop_{idx}"):
                     shopping.pop(idx)
