@@ -75,7 +75,7 @@ GEMINI_API_KEY = get_key("GEMINI_API_KEY")
 
 
 # ---------------------------------------------------------------------------
-# System prompt (Greeting behavior, Age, Allergies & Strict Kitchen Scope)
+# System prompt (Strict Allergies, Table format, Integer Age & Budget)
 # ---------------------------------------------------------------------------
 
 USER_TYPES = [
@@ -89,18 +89,12 @@ def build_system_prompt(user_type: str, user_age: int, user_allergies: str) -> s
     base = f"""You are "{APP_TITLE}", a smart, professional personal AI chef and kitchen assistant.
 Tagline: "{APP_TAGLINE}"
 
-CRITICAL GREETING & CONVERSATION RULES:
-- GREETING: When the user starts with a greeting like "Hello", "Hi", "Salam", or "Assalam-o-Alaikum", greet them warmly as their kitchen assistant and immediately ask: "I am your kitchen assistant! What would you like to eat today? Are you looking for breakfast, lunch, dinner, or quick recipes?"
-- TIME & MEAL SUGGESTIONS: Suggest appropriate meal options based on whether it's breakfast, lunch, or dinner, keeping in mind the selected profile.
-
-DOMAIN & LANGUAGE GUARDRAILS:
-- STRICT KITCHEN FOCUS: You must ONLY answer questions related to food, recipes, global dishes, ingredients, kitchen management, grocery shopping lists, table quantities, and food budgets. Never discuss programming, code, politics, or general news. If asked off-topic questions, politely apologize and decline.
-- MULTILINGUAL: Adapt naturally to whatever language or script the user writes in (English, Urdu, Roman Urdu, Sindhi, etc.). Reply correctly in that same language or script without generating broken text or repetitive garbage.
-- PROFILE SPECIFICS: Tailor all recipes and portion sizes precisely to the user's details:
-  * Profile Type: {user_type}
-  * Age: {user_age} years old
-  * Allergies / Dietary Restrictions to strictly avoid: {user_allergies if user_allergies.strip() else "None specified"}
-- QUANTITIES & SOURCES: Provide exact numeric measurements (e.g., 5 kg, 7 litres), clear step-by-step instructions, and recipe source references or links when helpful."""
+CRITICAL BEHAVIOR & ALLERGY RULES:
+- STRICT ALLERGY EXCLUSION: If the user lists any allergies or restricted ingredients (e.g., {user_allergies}), you MUST NEVER suggest any dish, ingredient, or recipe that contains them. For example, if "potato" is restricted, do not suggest potato or potato-based dishes under any circumstances.
+- GREETING: When the user starts with a greeting like "Hello", "Hi", "Salam", greet them warmly and ask: "I am your kitchen assistant! What would you like to eat today? Are you looking for breakfast, lunch, dinner, or quick recipes?"
+- TABLE FORMAT & BUDGET: Present ingredients, quantities, and cost breakdowns in clear Markdown tables whenever possible. Ensure all recipes are cost-effective and under budget.
+- QUANTITIES & AGES: Tailor portions and recipes precisely to the profile type ({user_type}) and integer age ({user_age} years old). Use integer or exact decimal values for quantities (e.g., 5 kg, 7 litres) when requested.
+- SCOPE & LANGUAGE: Stick strictly to food, cooking, recipes, and kitchen management. Adapt fluently to the language/script the user writes in (English, Urdu, Roman Urdu, etc.) without broken output."""
 
     return base
 
@@ -385,14 +379,14 @@ with st.sidebar:
         max_value=120,
         value=st.session_state.user_age,
         step=1,
-        help="Integer age (e.g., 7, 8, 30) for precise portioning.",
+        help="Integer age for precise meal requirements.",
     )
 
     st.session_state.user_allergies = st.text_input(
         "⚠️ Allergies / Restrictions:",
         value=st.session_state.user_allergies,
-        placeholder="e.g. peanuts, dairy, gluten",
-        help="Specify any food allergies or ingredients to avoid.",
+        placeholder="e.g. potato, dairy, peanuts",
+        help="Dishes containing these items will be strictly avoided.",
     )
 
     st.divider()
@@ -441,7 +435,7 @@ def render_home():
     current_profile = st.session_state.user_type
     current_age = st.session_state.user_age
     current_allergies = st.session_state.user_allergies
-    profile_badge = f"Profile: {current_profile} (Age: {current_age}) | Allergies: {current_allergies}"
+    profile_badge = f"Profile: {current_profile} (Age: {current_age}) | Avoiding: {current_allergies}"
 
     st.markdown(
         f"""
@@ -449,7 +443,7 @@ def render_home():
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
             <p class="hero-title">What would you like to eat today?</p>
-            <p class="hero-subtitle">Ask for breakfast, lunch, dinner, or quick recipes. Get exact quantities, budget guidance, and multilingual support!</p>
+            <p class="hero-subtitle">Ask for breakfast, lunch, dinner, or budget recipes. Fully customized tables and allergy-safe filters!</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -459,7 +453,7 @@ def render_home():
     with input_col:
         home_input = st.text_input(
             "quick_prompt",
-            placeholder="e.g., Hello! What can I cook for dinner? (or ask in Urdu)",
+            placeholder="e.g., Hello! Give me a dinner recipe under budget (or ask in Urdu)",
             label_visibility="collapsed",
         )
     with btn_col:
@@ -473,28 +467,28 @@ def render_home():
     st.subheader("💡 Quick Meal Suggestions")
     
     ideas = [
-        ("🌅", "Quick healthy breakfast ideas"),
-        ("☀️", "Nutritious lunch options"),
-        ("🌙", "Delicious dinner recipes (5 kg batch)"),
-        ("⚡", "30-minute quick recipes"),
+        ("🌅", "Quick breakfast ideas (allergy-safe)"),
+        ("☀️", "Healthy lunch options in table format"),
+        ("🌙", "Dinner recipes under budget"),
+        ("⚡", "30-minute quick dishes"),
     ]
 
     cols = st.columns(2)
     for idx, (emoji, label) in enumerate(ideas):
         with cols[idx % 2]:
             if st.button(f"{emoji}  {label}", use_container_width=True, key=f"idea_{idx}"):
-                ask_agent(f"Please give me some recommendations for {label} tailored to my profile and age {current_age}.")
+                ask_agent(f"Please give me a table-formatted recipe for: {label} respecting my allergy restrictions ({current_allergies}) and age {current_age}.")
                 st.rerun()
 
     if st.session_state.data["ingredients"]:
         st.write("")
         st.subheader("🥕 From your pantry ingredients")
         ing_list = st.session_state.data["ingredients"]
-        chips_html = "".join(f'<span class="chip">{i["amount"]} {i["unit"]} {i["name"]}</span>' for i in ing_list)
+        chips_html = "".join(f'<span class="chip">{i["name"]}</span>' for i in ing_list)
         st.markdown(chips_html, unsafe_allow_html=True)
         if st.button("Generate recipes using my ingredients", type="primary"):
-            summary_str = ", ".join(f"{i['amount']} {i['unit']} {i['name']}" for i in ing_list)
-            ask_agent(f"I have these pantry items: {summary_str}. What can I cook according to my kitchen requirements and budget?")
+            summary_str = ", ".join(i['name'] for i in ing_list)
+            ask_agent(f"I have these pantry items: {summary_str}. Give me recipes in table format avoiding my allergies ({current_allergies}).")
             st.rerun()
 
 
@@ -507,7 +501,7 @@ def render_chat():
         f"""
         <div class="hero-banner" style="padding: 18px 24px;">
             <p class="hero-title" style="font-size:22px;">👩‍🍳 AI Chef Chat</p>
-            <p class="hero-subtitle">Your personal kitchen assistant is ready. Ask for breakfast, lunch, dinner, or recipes!</p>
+            <p class="hero-subtitle">Your personal kitchen assistant is ready with table outputs and strict allergy controls.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -541,19 +535,17 @@ def render_chat():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (Strict string name, integer/float amounts & units)
+# PAGE: My Ingredients (Strict string name only, no amounts)
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add items with exact string names and integer/float quantities (e.g., 5 kg, 7 litres, 500 g).")
+    st.caption("Add pantry items by name only (strings).")
 
     with st.form("add_ingredient", clear_on_submit=True):
-        c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-        name = c1.text_input("Ingredient Name (Letters only)", placeholder="e.g. Chicken")
-        amount = c2.number_input("Amount (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0)
-        unit = c3.selectbox("Unit", UNIT_OPTIONS)
-        submitted = c4.form_submit_button("➕ Add", use_container_width=True)
+        c1, c2 = st.columns([4, 1])
+        name = c1.text_input("Ingredient Name (Letters only)", placeholder="e.g. Chicken, Tomato, Rice")
+        submitted = c2.form_submit_button("➕ Add", use_container_width=True)
 
         if submitted:
             cleaned_name = name.strip()
@@ -562,9 +554,7 @@ def render_ingredients():
             elif any(char.isdigit() for char in cleaned_name):
                 st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits.")
             else:
-                st.session_state.data["ingredients"].append(
-                    {"name": cleaned_name, "amount": amount, "unit": unit}
-                )
+                st.session_state.data["ingredients"].append({"name": cleaned_name})
                 save_data()
                 st.rerun()
 
@@ -576,7 +566,7 @@ def render_ingredients():
         for idx, ing in enumerate(ingredients):
             col_info, col_del = st.columns([5, 1])
             with col_info:
-                st.markdown(f"**{ing['name']}** — `{ing['amount']} {ing['unit']}`")
+                st.markdown(f"**{ing['name']}**")
             with col_del:
                 if st.button("🗑️", key=f"del_ing_{idx}"):
                     ingredients.pop(idx)
@@ -585,17 +575,17 @@ def render_ingredients():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: Shopping List (Strict string item name, integer/float quantity & units)
+# PAGE: Shopping List (String name + Integer/Float amount + Unit)
 # ---------------------------------------------------------------------------
 
 def render_shopping_list():
     st.subheader("🛒 Shopping List")
-    st.caption("Manage items you need to buy with string names, integer/float quantities, and proper units.")
+    st.caption("Manage grocery shopping items with item names, integer/float quantities (e.g. 5, 6), and units.")
 
     with st.form("add_shopping", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
         item = c1.text_input("Shopping Item (Letters only)", placeholder="e.g. Rice")
-        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=7.0)
+        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0)
         unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit")
         submitted = c4.form_submit_button("➕ Add Item", use_container_width=True)
 
