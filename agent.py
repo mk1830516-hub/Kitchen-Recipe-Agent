@@ -35,7 +35,7 @@ MEMORY_FILE = Path(__file__).parent / "chat_memory.json"
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
 COHERE_MODEL = "command-r7b-12-2024"
-GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_MODEL = "gemini-1.5-flash"
 
 ACCENT_OPTIONS = {
     "Green": "#2f6f4f",
@@ -75,34 +75,34 @@ GEMINI_API_KEY = get_key("GEMINI_API_KEY")
 
 
 # ---------------------------------------------------------------------------
-# System prompt (Smart, Multilingual, Strict Domain & Budget/Shopping aware)
+# System prompt (Greeting behavior, Age, Allergies & Strict Kitchen Scope)
 # ---------------------------------------------------------------------------
 
 USER_TYPES = [
-    "Normal / Adult",
-    "Older Adult",
+    "Adult",
+    "Child",
     "Health-conscious / Fitness",
 ]
 
 
-def build_system_prompt(user_type: str) -> str:
+def build_system_prompt(user_type: str, user_age: int, user_allergies: str) -> str:
     base = f"""You are "{APP_TITLE}", a smart, professional personal AI chef and kitchen assistant.
 Tagline: "{APP_TAGLINE}"
 
-BEHAVIOR & LANGUAGE GUIDELINES:
-- Adapt naturally to whatever language or script the user writes in (English, Urdu, Roman Urdu, Sindhi, etc.). If the user asks in Urdu or Roman Urdu, reply appropriately in that same language or script.
-- Keep your answers strictly focused on cooking, recipes, ingredients, kitchen requirements, shopping lists, quantities, and food budgets.
-- If the user asks about anything unrelated to food, cooking, or kitchen management (such as coding, general news, politics, homework, etc.), politely apologize and decline, reminding them that you are only a kitchen assistant.
-- Provide clear quantities, measurements, step-by-step cooking instructions, ingredient sources or substitutions when helpful, and budget-conscious recommendations aligned with kitchen inventory and shopping lists."""
+CRITICAL GREETING & CONVERSATION RULES:
+- GREETING: When the user starts with a greeting like "Hello", "Hi", "Salam", or "Assalam-o-Alaikum", greet them warmly as their kitchen assistant and immediately ask: "I am your kitchen assistant! What would you like to eat today? Are you looking for breakfast, lunch, dinner, or quick recipes?"
+- TIME & MEAL SUGGESTIONS: Suggest appropriate meal options based on whether it's breakfast, lunch, or dinner, keeping in mind the selected profile.
 
-    profile_notes = {
-        "Normal / Adult": "User is a regular adult cook. Keep recipes practical and flavorful.",
-        "Older Adult": "User is cooking for an older adult. Keep meals easily digestible, balanced, and lower in heavy sodium/spices.",
-        "Health-conscious / Fitness": "User is health-conscious. Focus on clean ingredients, balanced macros, and nutritious meal planning.",
-    }
+DOMAIN & LANGUAGE GUARDRAILS:
+- STRICT KITCHEN FOCUS: You must ONLY answer questions related to food, recipes, global dishes, ingredients, kitchen management, grocery shopping lists, table quantities, and food budgets. Never discuss programming, code, politics, or general news. If asked off-topic questions, politely apologize and decline.
+- MULTILINGUAL: Adapt naturally to whatever language or script the user writes in (English, Urdu, Roman Urdu, Sindhi, etc.). Reply correctly in that same language or script without generating broken text or repetitive garbage.
+- PROFILE SPECIFICS: Tailor all recipes and portion sizes precisely to the user's details:
+  * Profile Type: {user_type}
+  * Age: {user_age} years old
+  * Allergies / Dietary Restrictions to strictly avoid: {user_allergies if user_allergies.strip() else "None specified"}
+- QUANTITIES & SOURCES: Provide exact numeric measurements (e.g., 5 kg, 7 litres), clear step-by-step instructions, and recipe source references or links when helpful."""
 
-    extra = profile_notes.get(user_type, profile_notes["Normal / Adult"])
-    return base + "\n\n" + extra
+    return base
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ def call_groq(system_prompt: str, history: list, user_prompt: str) -> str:
         raise RuntimeError("GROQ_API_KEY not set")
     client = Groq(api_key=GROQ_API_KEY)
     messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": user_prompt}]
-    resp = client.chat.completions.create(model=GROQ_MODEL, messages=messages, temperature=0.5, max_tokens=1500)
+    resp = client.chat.completions.create(model=GROQ_MODEL, messages=messages, temperature=0.3, max_tokens=1500)
     return resp.choices[0].message.content
 
 
@@ -194,38 +194,40 @@ def call_gemini(system_prompt: str, history: list, user_prompt: str) -> str:
 
 
 def get_ai_response(system_prompt: str, history: list, user_prompt: str) -> tuple[str, str]:
-    errors = []
     if GROQ_API_KEY:
         try:
             reply = call_groq(system_prompt, history, user_prompt)
             if reply and reply.strip():
                 return reply, "Groq"
-        except Exception as e:
-            errors.append(f"Groq: {e}")
+        except Exception:
+            pass
     if COHERE_API_KEY:
         try:
             reply = call_cohere(system_prompt, history, user_prompt)
             if reply and reply.strip():
                 return reply, "Cohere"
-        except Exception as e:
-            errors.append(f"Cohere: {e}")
+        except Exception:
+            pass
     if GEMINI_API_KEY:
         try:
             reply = call_gemini(system_prompt, history, user_prompt)
             if reply and reply.strip():
                 return reply, "Gemini"
-        except Exception as e:
-            errors.append(f"Gemini: {e}")
+        except Exception:
+            pass
 
     return "⚠️ Sorry, none of the AI backends could respond right now. Please check your API keys.", "None"
 
 
 def ask_agent(user_prompt: str) -> None:
     user_type = st.session_state.user_type
+    user_age = st.session_state.user_age
+    user_allergies = st.session_state.user_allergies
+    
     st.session_state.messages.append({"role": "user", "content": user_prompt})
     append_and_save("user", user_prompt, user_type)
 
-    system_prompt = build_system_prompt(user_type)
+    system_prompt = build_system_prompt(user_type, user_age, user_allergies)
     history_for_model = st.session_state.messages[:-1][-10:]
     reply, backend_used = get_ai_response(system_prompt, history_for_model, user_prompt)
 
@@ -249,7 +251,13 @@ if "messages" not in st.session_state:
     ]
 
 if "user_type" not in st.session_state:
-    st.session_state.user_type = "Normal / Adult"
+    st.session_state.user_type = "Adult"
+
+if "user_age" not in st.session_state:
+    st.session_state.user_age = 30
+
+if "user_allergies" not in st.session_state:
+    st.session_state.user_allergies = "None"
 
 if "page" not in st.session_state:
     st.session_state.page = "Home"
@@ -336,7 +344,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — Branding, Navigation, Profile & Linked Chat History
+# Sidebar — Branding, Navigation, Profile, Age, Allergies & History
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
@@ -368,7 +376,23 @@ with st.sidebar:
         "🍽️ Kitchen Profile:",
         options=USER_TYPES,
         index=USER_TYPES.index(st.session_state.user_type),
-        help="Tailors recipes for general cooking, older adults, or health-conscious meals.",
+        help="Tailors recipes for Adult, Child, or Health-conscious needs.",
+    )
+
+    st.session_state.user_age = st.number_input(
+        "🎂 Profile Age (Years):",
+        min_value=1,
+        max_value=120,
+        value=st.session_state.user_age,
+        step=1,
+        help="Integer age (e.g., 7, 8, 30) for precise portioning.",
+    )
+
+    st.session_state.user_allergies = st.text_input(
+        "⚠️ Allergies / Restrictions:",
+        value=st.session_state.user_allergies,
+        placeholder="e.g. peanuts, dairy, gluten",
+        help="Specify any food allergies or ingredients to avoid.",
     )
 
     st.divider()
@@ -382,8 +406,6 @@ with st.sidebar:
             clear_chat_history()
             st.rerun()
             
-        # Display stored history in sidebar. Deleting a turn deletes both user prompt and assistant reply.
-        # Group conversations into pairs (user prompt + assistant response)
         pairs = []
         i = 0
         while i < len(chats):
@@ -399,10 +421,9 @@ with st.sidebar:
             snippet = u_turn["content"][:32] + ("..." if len(u_turn["content"]) > 32 else "")
             col_txt, col_del = st.columns([4, 1])
             with col_txt:
-                st.markdown(f"<div class='history-card'><b>{u_turn.get('user_type','Normal')}</b><br>{snippet}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='history-card'><b>{u_turn.get('user_type','Adult')}</b><br>{snippet}</div>", unsafe_allow_html=True)
             with col_del:
                 if st.button("❌", key=f"del_pair_{idx}", help="Delete this conversation turn"):
-                    # Remove from persistent conversations list and sync session messages
                     if u_turn in st.session_state.data["conversations"]:
                         st.session_state.data["conversations"].remove(u_turn)
                     if a_turn and a_turn in st.session_state.data["conversations"]:
@@ -418,15 +439,17 @@ with st.sidebar:
 
 def render_home():
     current_profile = st.session_state.user_type
-    profile_badge = f"Profile: {current_profile}"
+    current_age = st.session_state.user_age
+    current_allergies = st.session_state.user_allergies
+    profile_badge = f"Profile: {current_profile} (Age: {current_age}) | Allergies: {current_allergies}"
 
     st.markdown(
         f"""
         <div class="hero-banner">
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
-            <p class="hero-title">What would you like to cook today?</p>
-            <p class="hero-subtitle">Ask naturally in any language. Get precise quantities, ingredients, sources, and budget-friendly guidance!</p>
+            <p class="hero-title">What would you like to eat today?</p>
+            <p class="hero-subtitle">Ask for breakfast, lunch, dinner, or quick recipes. Get exact quantities, budget guidance, and multilingual support!</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -436,31 +459,31 @@ def render_home():
     with input_col:
         home_input = st.text_input(
             "quick_prompt",
-            placeholder="e.g., 6 kg chicken, 5 litres milk — what can I make? (or ask in Urdu/Roman Urdu)",
+            placeholder="e.g., Hello! What can I cook for dinner? (or ask in Urdu)",
             label_visibility="collapsed",
         )
     with btn_col:
-        find_clicked = st.button("Find Recipes ✨", use_container_width=True, type="primary")
+        find_clicked = st.button("Ask Assistant ✨", use_container_width=True, type="primary")
 
     if find_clicked and home_input.strip():
         ask_agent(home_input.strip())
         st.rerun()
 
     st.write("")
-    st.subheader("💡 Quick Suggestions")
+    st.subheader("💡 Quick Meal Suggestions")
     
     ideas = [
-        ("🍗", "Quick chicken curry dinner"),
-        ("🍛", "Traditional Chicken Biryani (6 kg batch)"),
-        ("🍝", "30-minute creamy pasta"),
-        ("🥘", "Healthy family vegetable rice"),
+        ("🌅", "Quick healthy breakfast ideas"),
+        ("☀️", "Nutritious lunch options"),
+        ("🌙", "Delicious dinner recipes (5 kg batch)"),
+        ("⚡", "30-minute quick recipes"),
     ]
 
     cols = st.columns(2)
     for idx, (emoji, label) in enumerate(ideas):
         with cols[idx % 2]:
             if st.button(f"{emoji}  {label}", use_container_width=True, key=f"idea_{idx}"):
-                ask_agent(f"Please give me a recipe for: {label}")
+                ask_agent(f"Please give me some recommendations for {label} tailored to my profile and age {current_age}.")
                 st.rerun()
 
     if st.session_state.data["ingredients"]:
@@ -484,7 +507,7 @@ def render_chat():
         f"""
         <div class="hero-banner" style="padding: 18px 24px;">
             <p class="hero-title" style="font-size:22px;">👩‍🍳 AI Chef Chat</p>
-            <p class="hero-subtitle">Ask questions, request recipes, check quantities, or manage kitchen requirements.</p>
+            <p class="hero-subtitle">Your personal kitchen assistant is ready. Ask for breakfast, lunch, dinner, or recipes!</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -507,7 +530,7 @@ def render_chat():
                     save_data()
                     st.toast("Recipe saved successfully!")
 
-    user_prompt = st.chat_input("Ask anything about cooking, quantities, or budget...")
+    user_prompt = st.chat_input("Say hello or ask what to eat today (breakfast, lunch, dinner)...")
     if user_prompt:
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(user_prompt)
@@ -523,22 +546,21 @@ def render_chat():
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add items with exact string names and integer/float quantities (e.g., 6 kg, 5 litres, 500 g).")
+    st.caption("Add items with exact string names and integer/float quantities (e.g., 5 kg, 7 litres, 500 g).")
 
     with st.form("add_ingredient", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
         name = c1.text_input("Ingredient Name (Letters only)", placeholder="e.g. Chicken")
-        amount = c2.number_input("Amount (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=1.0)
+        amount = c2.number_input("Amount (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0)
         unit = c3.selectbox("Unit", UNIT_OPTIONS)
         submitted = c4.form_submit_button("➕ Add", use_container_width=True)
 
         if submitted:
             cleaned_name = name.strip()
-            # Validate name contains no numbers/digits
             if not cleaned_name:
                 st.error("Please enter a valid ingredient name.")
             elif any(char.isdigit() for char in cleaned_name):
-                st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits like float/int.")
+                st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits.")
             else:
                 st.session_state.data["ingredients"].append(
                     {"name": cleaned_name, "amount": amount, "unit": unit}
@@ -572,8 +594,8 @@ def render_shopping_list():
 
     with st.form("add_shopping", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-        item = c1.text_input("Shopping Item (Letters only)", placeholder="e.g. Olive Oil")
-        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=1.0)
+        item = c1.text_input("Shopping Item (Letters only)", placeholder="e.g. Rice")
+        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=7.0)
         unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit")
         submitted = c4.form_submit_button("➕ Add Item", use_container_width=True)
 
