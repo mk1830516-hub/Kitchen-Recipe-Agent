@@ -437,6 +437,9 @@ ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 st.markdown(
     f"""
     <style>
+    #MainMenu {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+    
     :root {{
         --accent: {ACCENT};
         color-scheme: light;
