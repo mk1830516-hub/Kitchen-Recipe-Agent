@@ -722,29 +722,66 @@ def render_ingredients():
 # PAGE: Shopping List (string name + integer/float amount + unit)
 # ---------------------------------------------------------------------------
 
+LIQUID_KEYWORDS = [
+    "milk", "water", "oil", "juice", "yogurt", "yoghurt", "cream", "vinegar",
+    "ghee", "syrup", "sauce", "broth", "stock", "wine", "honey", "doodh",
+    "paani", "tel", "lassi", "shorba",
+]
+
+
+def guess_unit(item_name: str) -> str:
+    """Suggest a sensible default unit based on the item name — liquids get
+    litres, everything else defaults to kg."""
+    name_lower = item_name.lower()
+    if any(keyword in name_lower for keyword in LIQUID_KEYWORDS):
+        return "litres"
+    return "kg"
+
+
+def _update_suggested_unit():
+    st.session_state.shop_unit = guess_unit(st.session_state.get("shop_item_input", ""))
+
+
 def render_shopping_list():
     st.subheader("🛒 Shopping List")
-    st.caption("Manage grocery shopping items with item names, integer/float quantities, and units.")
+    st.caption("Manage grocery shopping items with item names, integer/float quantities, and units. Unit auto-suggests based on the item name — override anytime.")
 
-    with st.form("add_shopping", clear_on_submit=True):
-        c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-        item = c1.text_input("Shopping Item (Letters only)", placeholder="e.g. Rice")
-        amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0)
-        unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit")
-        submitted = c4.form_submit_button("➕ Add Item", use_container_width=True)
+    # Reset the add-item fields BEFORE creating the widgets this run, if the
+    # previous run requested it (avoids Streamlit's "can't modify state after
+    # widget instantiated" error from resetting them after the fact).
+    if st.session_state.get("_reset_shop_form"):
+        st.session_state.shop_item_input = ""
+        st.session_state.shop_unit = "kg"
+        st.session_state.shop_amount_input = 5.0
+        st.session_state._reset_shop_form = False
 
-        if submitted:
-            cleaned_item = item.strip()
-            if not cleaned_item:
-                st.error("Please enter a valid shopping item name.")
-            elif any(char.isdigit() for char in cleaned_item):
-                st.error("Shopping item name must be text (strings only) and cannot contain numbers or digits.")
-            else:
-                st.session_state.data["shopping_list"].append(
-                    {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
-                )
-                save_data()
-                st.rerun()
+    if "shop_unit" not in st.session_state:
+        st.session_state.shop_unit = "kg"
+
+    c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
+    item = c1.text_input(
+        "Shopping Item (Letters only)",
+        placeholder="e.g. Rice, Milk",
+        key="shop_item_input",
+        on_change=_update_suggested_unit,
+    )
+    amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0, key="shop_amount_input")
+    unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit")
+    add_clicked = c4.button("➕ Add Item", use_container_width=True)
+
+    if add_clicked:
+        cleaned_item = item.strip()
+        if not cleaned_item:
+            st.error("Please enter a valid shopping item name.")
+        elif any(char.isdigit() for char in cleaned_item):
+            st.error("Shopping item name must be text (strings only) and cannot contain numbers or digits.")
+        else:
+            st.session_state.data["shopping_list"].append(
+                {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
+            )
+            save_data()
+            st.session_state._reset_shop_form = True
+            st.rerun()
 
     shopping = st.session_state.data["shopping_list"]
     if not shopping:
