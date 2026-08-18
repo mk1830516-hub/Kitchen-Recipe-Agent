@@ -34,7 +34,7 @@ APP_ICON = "👩‍🍳"
 MEMORY_FILE = Path(__file__).parent / "chat_memory.json"
 
 GROQ_MODEL = "llama-3.3-70b-versatile"
-COHERE_MODEL = "command-r-plus"
+COHERE_MODEL = "command-r7b-12-2024"
 GEMINI_MODEL = "gemini-1.5-flash"
 
 ACCENT_OPTIONS = {
