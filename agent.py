@@ -40,9 +40,9 @@ APP_TAGLINE = "Your Smart Personal Kitchen Assistant"
 APP_ICON = "👩‍🍳"
 MEMORY_FILE = Path(__file__).parent / "chat_memory.json"
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
-COHERE_MODEL = "command-r-plus"
-GEMINI_MODEL = "gemini-1.5-flash"
+GROQ_MODEL = "llama-3.1-8b-instant"
+COHERE_MODEL = "command-r"
+GEMINI_MODEL = "gemini-2.5-pro"
 
 ACCENT_OPTIONS = {
     "Green": "#2f6f4f",
