@@ -1,3 +1,4 @@
+```python
 """
 Kitchen Recipe Agent
 =====================
@@ -75,26 +76,35 @@ GEMINI_API_KEY = get_key("GEMINI_API_KEY")
 
 
 # ---------------------------------------------------------------------------
-# System prompt (Strict Allergies, Table format, Integer Age & Budget)
+# System prompt (Dynamic Language Matching, Strict Allergies & Default Profile)
 # ---------------------------------------------------------------------------
 
 USER_TYPES = [
+    "Select Profile / Default",
     "Adult",
     "Child",
     "Health-conscious / Fitness",
 ]
 
 
-def build_system_prompt(user_type: str, user_age: int, user_allergies: str) -> str:
+def build_system_prompt(user_type: str, user_age, user_allergies: str) -> str:
+    is_default = (user_type == "Select Profile / Default")
+    
+    profile_instructions = (
+        "No specific profile or age has been selected yet. Provide general, balanced recipes suitable for anyone."
+        if is_default else
+        f"Selected Profile Type: {user_type}, Age: {user_age} years old."
+    )
+
     base = f"""You are "{APP_TITLE}", a smart, professional personal AI chef and kitchen assistant.
 Tagline: "{APP_TAGLINE}"
 
-CRITICAL BEHAVIOR & ALLERGY RULES:
-- STRICT ALLERGY EXCLUSION: If the user lists any allergies or restricted ingredients (e.g., {user_allergies}), you MUST NEVER suggest any dish, ingredient, or recipe that contains them. For example, if "potato" is restricted, do not suggest potato or potato-based dishes under any circumstances.
-- GREETING: When the user starts with a greeting like "Hello", "Hi", "Salam", greet them warmly and ask: "I am your kitchen assistant! What would you like to eat today? Are you looking for breakfast, lunch, dinner, or quick recipes?"
-- TABLE FORMAT & BUDGET: Present ingredients, quantities, and cost breakdowns in clear Markdown tables whenever possible. Ensure all recipes are cost-effective and under budget.
-- QUANTITIES & AGES: Tailor portions and recipes precisely to the profile type ({user_type}) and integer age ({user_age} years old). Use integer or exact decimal values for quantities (e.g., 5 kg, 7 litres) when requested.
-- SCOPE & LANGUAGE: Stick strictly to food, cooking, recipes, and kitchen management. Adapt fluently to the language/script the user writes in (English, Urdu, Roman Urdu, etc.) without broken output."""
+CRITICAL LANGUAGE & BEHAVIOR RULES:
+- DYNAMIC LANGUAGE MATCHING: You MUST reply in the EXACT same language, script, and tone that the user uses in their prompt (e.g., if the user writes in Roman Urdu, reply in natural Roman Urdu; if in Urdu script, reply in Urdu script; if in English, reply in English). Never force a different language.
+- DEFAULT & PROFILE BEHAVIOR: {profile_instructions}
+- STRICT ALLERGY EXCLUSION: If the user enters any allergies or restricted ingredients (e.g., {user_allergies}), you MUST strictly avoid and never suggest any dish, recipe, or ingredient containing them (e.g., if potato is restricted, do not suggest potato dishes).
+- TABLE FORMAT & BUDGET: Present recipe ingredients, quantities, and instructions using clean Markdown tables whenever appropriate. Keep all suggestions budget-friendly and under budget.
+- SCOPE: Stick strictly to food, recipes, cooking, and kitchen management."""
 
     return base
 
@@ -245,10 +255,10 @@ if "messages" not in st.session_state:
     ]
 
 if "user_type" not in st.session_state:
-    st.session_state.user_type = "Adult"
+    st.session_state.user_type = "Select Profile / Default"
 
 if "user_age" not in st.session_state:
-    st.session_state.user_age = 30
+    st.session_state.user_age = 25
 
 if "user_allergies" not in st.session_state:
     st.session_state.user_allergies = "None"
@@ -370,24 +380,25 @@ with st.sidebar:
         "🍽️ Kitchen Profile:",
         options=USER_TYPES,
         index=USER_TYPES.index(st.session_state.user_type),
-        help="Tailors recipes for Adult, Child, or Health-conscious needs.",
+        help="Select a profile or leave as default.",
     )
 
-    st.session_state.user_age = st.number_input(
-        "🎂 Profile Age (Years):",
-        min_value=1,
-        max_value=120,
-        value=st.session_state.user_age,
-        step=1,
-        help="Integer age for precise meal requirements.",
-    )
+    if st.session_state.user_type != "Select Profile / Default":
+        st.session_state.user_age = st.number_input(
+            "🎂 Profile Age (Years):",
+            min_value=1,
+            max_value=120,
+            value=st.session_state.user_age,
+            step=1,
+            help="Integer age for custom tailoring.",
+        )
 
-    st.session_state.user_allergies = st.text_input(
-        "⚠️ Allergies / Restrictions:",
-        value=st.session_state.user_allergies,
-        placeholder="e.g. potato, dairy, peanuts",
-        help="Dishes containing these items will be strictly avoided.",
-    )
+        st.session_state.user_allergies = st.text_input(
+            "⚠️ Allergies / Restrictions:",
+            value=st.session_state.user_allergies,
+            placeholder="e.g. potato, dairy",
+            help="Dishes containing these will be excluded.",
+        )
 
     st.divider()
     st.subheader("💬 Chat History")
@@ -415,9 +426,9 @@ with st.sidebar:
             snippet = u_turn["content"][:32] + ("..." if len(u_turn["content"]) > 32 else "")
             col_txt, col_del = st.columns([4, 1])
             with col_txt:
-                st.markdown(f"<div class='history-card'><b>{u_turn.get('user_type','Adult')}</b><br>{snippet}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='history-card'><b>{u_turn.get('user_type','Default')}</b><br>{snippet}</div>", unsafe_allow_html=True)
             with col_del:
-                if st.button("❌", key=f"del_pair_{idx}", help="Delete this conversation turn"):
+                if st.button("❌", key=f"del_pair_{idx}", help="Delete conversation turn"):
                     if u_turn in st.session_state.data["conversations"]:
                         st.session_state.data["conversations"].remove(u_turn)
                     if a_turn and a_turn in st.session_state.data["conversations"]:
@@ -433,9 +444,10 @@ with st.sidebar:
 
 def render_home():
     current_profile = st.session_state.user_type
-    current_age = st.session_state.user_age
-    current_allergies = st.session_state.user_allergies
-    profile_badge = f"Profile: {current_profile} (Age: {current_age}) | Avoiding: {current_allergies}"
+    if current_profile == "Select Profile / Default":
+        profile_badge = "Mode: Default (No Profile Selected)"
+    else:
+        profile_badge = f"Profile: {current_profile} (Age: {st.session_state.user_age}) | Avoiding: {st.session_state.user_allergies}"
 
     st.markdown(
         f"""
@@ -443,7 +455,7 @@ def render_home():
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
             <p class="hero-title">What would you like to eat today?</p>
-            <p class="hero-subtitle">Ask for breakfast, lunch, dinner, or budget recipes. Fully customized tables and allergy-safe filters!</p>
+            <p class="hero-subtitle">Talk in any language (English, Roman Urdu, Urdu script, etc.). Get clean table formats and allergen-safe dishes!</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -453,7 +465,7 @@ def render_home():
     with input_col:
         home_input = st.text_input(
             "quick_prompt",
-            placeholder="e.g., Hello! Give me a dinner recipe under budget (or ask in Urdu)",
+            placeholder="e.g., Hello! Mujh ko achi si dinner recipe batao (or in English)",
             label_visibility="collapsed",
         )
     with btn_col:
@@ -467,17 +479,17 @@ def render_home():
     st.subheader("💡 Quick Meal Suggestions")
     
     ideas = [
-        ("🌅", "Quick breakfast ideas (allergy-safe)"),
-        ("☀️", "Healthy lunch options in table format"),
-        ("🌙", "Dinner recipes under budget"),
-        ("⚡", "30-minute quick dishes"),
+        ("🌅", "Quick breakfast ideas / Nashta"),
+        ("☀️", "Healthy lunch options / Dopahar ka khana"),
+        ("🌙", "Budget dinner recipes / Raat ka khana"),
+        ("⚡", "30-minute fast dishes"),
     ]
 
     cols = st.columns(2)
     for idx, (emoji, label) in enumerate(ideas):
         with cols[idx % 2]:
             if st.button(f"{emoji}  {label}", use_container_width=True, key=f"idea_{idx}"):
-                ask_agent(f"Please give me a table-formatted recipe for: {label} respecting my allergy restrictions ({current_allergies}) and age {current_age}.")
+                ask_agent(f"Please give me a table-formatted recipe for: {label} matching my language and dietary preferences.")
                 st.rerun()
 
     if st.session_state.data["ingredients"]:
@@ -488,7 +500,7 @@ def render_home():
         st.markdown(chips_html, unsafe_allow_html=True)
         if st.button("Generate recipes using my ingredients", type="primary"):
             summary_str = ", ".join(i['name'] for i in ing_list)
-            ask_agent(f"I have these pantry items: {summary_str}. Give me recipes in table format avoiding my allergies ({current_allergies}).")
+            ask_agent(f"I have these pantry items: {summary_str}. Give me table-formatted recipes avoiding my restrictions.")
             st.rerun()
 
 
@@ -501,7 +513,7 @@ def render_chat():
         f"""
         <div class="hero-banner" style="padding: 18px 24px;">
             <p class="hero-title" style="font-size:22px;">👩‍🍳 AI Chef Chat</p>
-            <p class="hero-subtitle">Your personal kitchen assistant is ready with table outputs and strict allergy controls.</p>
+            <p class="hero-subtitle">Chat in any language you prefer. Responses match your exact language, table layout, and allergy rules.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -524,7 +536,7 @@ def render_chat():
                     save_data()
                     st.toast("Recipe saved successfully!")
 
-    user_prompt = st.chat_input("Say hello or ask what to eat today (breakfast, lunch, dinner)...")
+    user_prompt = st.chat_input("Type in English, Roman Urdu, or Urdu script...")
     if user_prompt:
         with st.chat_message("user", avatar=USER_AVATAR):
             st.markdown(user_prompt)
@@ -580,7 +592,7 @@ def render_ingredients():
 
 def render_shopping_list():
     st.subheader("🛒 Shopping List")
-    st.caption("Manage grocery shopping items with item names, integer/float quantities (e.g. 5, 6), and units.")
+    st.caption("Manage grocery shopping items with item names, integer/float quantities, and units.")
 
     with st.form("add_shopping", clear_on_submit=True):
         c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
@@ -680,3 +692,5 @@ PAGES = {
 }
 
 PAGES[st.session_state.page]()
+
+```
