@@ -941,7 +941,6 @@ PAGES = {
     "Home": render_home,
     "AI Chef Chat": render_chat,
     "My Ingredients": render_ingredients,
-    "Shopping List": render_shopping_list,
     "Saved Recipes": render_saved_recipes,
     "Theme Customize": render_theme,
 }
