@@ -834,63 +834,98 @@ def render_chat():
         st.rerun()
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (Updated: with Quantity & Unit)
+# PAGE: My Ingredients (With Update / Edit Feature)
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add pantry items. Quantity and Unit are optional.")
-
-    with st.form("add_ingredient", clear_on_submit=True):
-        c1, c2, c3 = st.columns([3, 1, 1])
-        name = c1.text_input("Ingredient Name", placeholder="e.g. Chicken, Tomato")
-        qty = c2.number_input("Qty (Optional)", min_value=0.0, step=0.1, value=0.0, format="%g")
-        unit = c3.selectbox("Unit", ["", "kg", "litres", "grams", "pieces", "cups"], index=0)
-        submitted = c2.form_submit_button("➕ Add", use_container_width=True)
-
-        if submitted:
-            cleaned_name = name.strip()
-            if not cleaned_name:
-                st.error("Please enter a valid ingredient name.")
-            elif any(char.isdigit() for char in cleaned_name):
-                st.error("Name should be text only.")
-            else:
-                # Duplicate Check Logic
-                is_duplicate = any(
-                    ing["name"].lower() == cleaned_name.lower() 
-                    for ing in st.session_state.data["ingredients"]
-                )
-                
-                if is_duplicate:
-                    st.warning(f"⚠️ '{cleaned_name}' is already in your pantry!")
-                else:
-                    # Agar Qty 0 hai, toh sirf name save hoga
-                    st.session_state.data["ingredients"].append({
-                        "name": cleaned_name, 
-                        "qty": qty if qty > 0 else None, 
-                        "unit": unit if unit else None
-                    })
-                    save_data()
-                    st.rerun()
+    st.caption("Add pantry items by name, with optional quantity and unit. You can update quantities anytime.")
 
     ingredients = st.session_state.data["ingredients"]
+    editing_idx = st.session_state.editing_ing_idx
+
+    # Edit mode or Add mode form
+    is_editing = editing_idx is not None and 0 <= editing_idx < len(ingredients)
+    
+    if is_editing:
+        target_item = ingredients[editing_idx]
+        st.markdown(f"**✏️ Editing item: `{target_item['name']}`**")
+        with st.form("edit_ingredient_form"):
+            c1, c2, c3 = st.columns([1.5, 1.5, 1])
+            new_qty = c1.number_input("Qty", min_value=0.0, step=0.1, value=float(target_item.get("qty") or 0.0), format="%g")
+            
+            unit_list = [""] + UNIT_OPTIONS
+            current_unit = target_item.get("unit") or ""
+            u_index = unit_list.index(current_unit) if current_unit in unit_list else 0
+            new_unit = c2.selectbox("Unit", unit_list, index=u_index)
+            
+            update_btn = c3.form_submit_button("💾 Save", use_container_width=True)
+            cancel_btn = c3.form_submit_button("❌ Cancel", use_container_width=True)
+
+            if update_btn:
+                ingredients[editing_idx]["qty"] = new_qty if new_qty > 0 else None
+                ingredients[editing_idx]["unit"] = new_unit if new_unit else None
+                save_data()
+                st.session_state.editing_ing_idx = None
+                st.rerun()
+            elif cancel_btn:
+                st.session_state.editing_ing_idx = None
+                st.rerun()
+    else:
+        with st.form("add_ingredient", clear_on_submit=True):
+            c1, c2, c3, c4 = st.columns([3, 1.2, 1.3, 1])
+            name = c1.text_input("Ingredient Name", placeholder="e.g. Chicken, Tomato")
+            qty = c2.number_input("Qty (Optional)", min_value=0.0, step=0.1, value=0.0, format="%g")
+            unit = c3.selectbox("Unit", [""] + UNIT_OPTIONS)
+            submitted = c4.form_submit_button("➕ Add", use_container_width=True)
+
+            if submitted:
+                cleaned_name = name.strip()
+                if not cleaned_name:
+                    st.error("Please enter a valid ingredient name.")
+                elif any(char.isdigit() for char in cleaned_name):
+                    st.error("Ingredient name must be text only.")
+                else:
+                    is_duplicate = any(
+                        ing["name"].lower() == cleaned_name.lower() 
+                        for ing in ingredients
+                    )
+                    if is_duplicate:
+                        st.warning(f"⚠️ '{cleaned_name}' is already in your pantry! Use the edit button to update its quantity.")
+                    else:
+                        ingredients.append({
+                            "name": cleaned_name,
+                            "qty": qty if qty > 0 else None,
+                            "unit": unit if unit else None
+                        })
+                        save_data()
+                        st.rerun()
+
+    st.divider()
+    
     if not ingredients:
-        st.info("Your pantry is empty.")
+        st.info("Your pantry is empty. Add items above!")
     else:
         for idx, ing in enumerate(ingredients):
-            col_info, col_del = st.columns([5, 1])
+            col_info, col_edit, col_del = st.columns([4, 1, 1])
             with col_info:
-                # Display logic: Agar qty/unit hai toh dikhayein, warna sirf name
                 display_text = f"**{ing['name']}**"
                 if ing.get("qty") and ing.get("unit"):
                     display_text += f" — {ing['qty']:g} {ing['unit']}"
+                elif ing.get("qty"):
+                    display_text += f" — {ing['qty']:g}"
                 st.markdown(display_text)
+            with col_edit:
+                if st.button("✏️ Edit", key=f"edit_ing_{idx}"):
+                    st.session_state.editing_ing_idx = idx
+                    st.rerun()
             with col_del:
-                if st.button("🗑️", key=f"del_ing_{idx}"):
+                if st.button("🗑️ Del", key=f"del_ing_{idx}"):
+                    if st.session_state.editing_ing_idx == idx:
+                        st.session_state.editing_ing_idx = None
                     ingredients.pop(idx)
                     save_data()
                     st.rerun()
-
 # ---------------------------------------------------------------------------
 # PAGE: Saved Recipes
 # ---------------------------------------------------------------------------
