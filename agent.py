@@ -993,4 +993,3 @@ PAGES = {
     "Theme Customize": render_theme,
 }
 
-PAGES[st.session_state.page]()
