@@ -833,18 +833,19 @@ def render_chat():
                 ask_agent(user_prompt)
         st.rerun()
 
-
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (string name only, no amounts)
+# PAGE: My Ingredients (Updated: with Quantity & Unit)
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add pantry items by name only (strings).")
+    st.caption("Add pantry items. Quantity and Unit are optional.")
 
     with st.form("add_ingredient", clear_on_submit=True):
-        c1, c2 = st.columns([4, 1])
-        name = c1.text_input("Ingredient Name (Letters only)", placeholder="e.g. Chicken, Tomato, Rice")
+        c1, c2, c3 = st.columns([3, 1, 1])
+        name = c1.text_input("Ingredient Name", placeholder="e.g. Chicken, Tomato")
+        qty = c2.number_input("Qty (Optional)", min_value=0.0, step=0.1, value=0.0, format="%g")
+        unit = c3.selectbox("Unit", ["", "kg", "litres", "grams", "pieces", "cups"], index=0)
         submitted = c2.form_submit_button("➕ Add", use_container_width=True)
 
         if submitted:
@@ -852,143 +853,43 @@ def render_ingredients():
             if not cleaned_name:
                 st.error("Please enter a valid ingredient name.")
             elif any(char.isdigit() for char in cleaned_name):
-                st.error("Ingredient name must be text (strings only) and cannot contain numbers or digits.")
+                st.error("Name should be text only.")
             else:
-                # --- Duplicate check yahan add kiya gaya hai ---
+                # Duplicate Check Logic
                 is_duplicate = any(
                     ing["name"].lower() == cleaned_name.lower() 
                     for ing in st.session_state.data["ingredients"]
                 )
                 
                 if is_duplicate:
-                    st.warning("⚠️ You have already added it!")
+                    st.warning(f"⚠️ '{cleaned_name}' is already in your pantry!")
                 else:
-                    st.session_state.data["ingredients"].append({"name": cleaned_name})
+                    # Agar Qty 0 hai, toh sirf name save hoga
+                    st.session_state.data["ingredients"].append({
+                        "name": cleaned_name, 
+                        "qty": qty if qty > 0 else None, 
+                        "unit": unit if unit else None
+                    })
                     save_data()
                     st.rerun()
 
     ingredients = st.session_state.data["ingredients"]
     if not ingredients:
-        st.info("Your pantry is empty. Add items above!")
+        st.info("Your pantry is empty.")
     else:
-        st.write("")
         for idx, ing in enumerate(ingredients):
             col_info, col_del = st.columns([5, 1])
             with col_info:
-                st.markdown(f"**{ing['name']}**")
+                # Display logic: Agar qty/unit hai toh dikhayein, warna sirf name
+                display_text = f"**{ing['name']}**"
+                if ing.get("qty") and ing.get("unit"):
+                    display_text += f" — {ing['qty']:g} {ing['unit']}"
+                st.markdown(display_text)
             with col_del:
                 if st.button("🗑️", key=f"del_ing_{idx}"):
                     ingredients.pop(idx)
                     save_data()
                     st.rerun()
-
-# ---------------------------------------------------------------------------
-# PAGE: Shopping List (string name + integer/float amount + unit)
-# ---------------------------------------------------------------------------
-
-LIQUID_KEYWORDS = [
-    "milk", "water", "oil", "juice", "yogurt", "yoghurt", "cream", "vinegar",
-    "ghee", "syrup", "sauce", "broth", "stock", "wine", "honey", "doodh",
-    "paani", "tel", "lassi", "shorba",
-]
-
-
-def guess_unit(item_name: str) -> str:
-    """Suggest a sensible default unit based on the item name — liquids get
-    litres, everything else defaults to kg."""
-    name_lower = item_name.lower()
-    if any(keyword in name_lower for keyword in LIQUID_KEYWORDS):
-        return "litres"
-    return "kg"
-
-
-def _mark_unit_manual():
-    st.session_state._shop_unit_manual = True
-
-
-def render_shopping_list():
-    st.subheader("🛒 Shopping List")
-    st.caption("Manage grocery shopping items with item names, integer/float quantities, and units. Unit auto-suggests based on the item name — override anytime.")
-
-    # Reset the add-item fields BEFORE creating the widgets this run, if the
-    # previous run requested it (avoids Streamlit's "can't modify state after
-    # widget instantiated" error from resetting them after the fact).
-    if st.session_state.get("_reset_shop_form"):
-        st.session_state.shop_item_input = ""
-        st.session_state.shop_unit = "kg"
-        st.session_state.shop_amount_input = 5.0
-        st.session_state._shop_unit_manual = False
-        st.session_state._reset_shop_form = False
-
-    if "shop_unit" not in st.session_state:
-        st.session_state.shop_unit = "kg"
-    if "_shop_unit_manual" not in st.session_state:
-        st.session_state._shop_unit_manual = False
-
-    c1, c2, c3, c4 = st.columns([3, 1.5, 1.5, 1])
-    item = c1.text_input(
-        "Shopping Item (Letters only)",
-        placeholder="e.g. Rice, Milk",
-        key="shop_item_input",
-    )
-
-    # Recompute the suggestion in THIS same run (not a delayed callback) as
-    # soon as the item text is available — unless the user has deliberately
-    # picked a unit themselves, in which case we respect their choice.
-    if not st.session_state._shop_unit_manual:
-        st.session_state.shop_unit = guess_unit(item)
-
-    amount = c2.number_input("Quantity (Int / Float)", min_value=0.1, step=1.0, format="%.2f", value=5.0, key="shop_amount_input")
-    unit = c3.selectbox("Unit", UNIT_OPTIONS, key="shop_unit", on_change=_mark_unit_manual)
-    add_clicked = c4.button("➕ Add Item", use_container_width=True)
-
-    if add_clicked:
-        cleaned_item = item.strip()
-        if not cleaned_item:
-            st.error("Please enter a valid shopping item name.")
-        elif any(char.isdigit() for char in cleaned_item):
-            st.error("Shopping item name must be text (strings only) and cannot contain numbers or digits.")
-        else:
-            # --- Duplicate check yahan add kiya gaya hai ---
-            is_duplicate = any(
-                shop["item"].lower() == cleaned_item.lower() 
-                for shop in st.session_state.data["shopping_list"]
-            )
-            
-            if is_duplicate:
-                st.warning("⚠️ You have already added it!")
-            else:
-                st.session_state.data["shopping_list"].append(
-                    {"item": cleaned_item, "amount": amount, "unit": unit, "bought": False}
-                )
-                save_data()
-                st.session_state._reset_shop_form = True
-                st.rerun()
-
-    shopping = st.session_state.data["shopping_list"]
-    if not shopping:
-        st.info("Your shopping list is empty.")
-    else:
-        st.write("")
-        for idx, shop in enumerate(shopping):
-            col_check, col_text, col_del = st.columns([1, 5, 1])
-            with col_check:
-                bought = st.checkbox("", value=shop["bought"], key=f"shop_check_{idx}")
-                if bought != shop["bought"]:
-                    shop["bought"] = bought
-                    save_data()
-            with col_text:
-                style = "text-decoration: line-through; opacity: 0.6;" if shop["bought"] else ""
-                st.markdown(
-                    f"<span style='{style}'><b>{shop['item']}</b> — {shop['amount']:g} {shop['unit']}</span>",
-                    unsafe_allow_html=True,
-                )
-            with col_del:
-                if st.button("🗑️", key=f"del_shop_{idx}"):
-                    shopping.pop(idx)
-                    save_data()
-                    st.rerun()
-
 
 # ---------------------------------------------------------------------------
 # PAGE: Saved Recipes
