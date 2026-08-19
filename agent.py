@@ -834,19 +834,28 @@ def render_chat():
         st.rerun()
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (With Update / Edit Feature)
+# MY INGREDIENTS MODULE (Complete & Ready to Use)
 # ---------------------------------------------------------------------------
+
+UNIT_OPTIONS = ["kg", "g", "litres", "ml", "pieces", "cups", "tbsp", "tsp", "pinch"]
+
+# App ke shuru mein session state initialization ke liye yeh zaroor rakhen:
+if "editing_ing_idx" not in st.session_state:
+    st.session_state.editing_ing_idx = None
+
+if "data" not in st.session_state:
+    st.session_state.data = {"ingredients": []}
+
 
 def render_ingredients():
     st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add pantry items by name, with optional quantity and unit. You can update quantities anytime.")
+    st.caption("Add items directly with quantity and unit, edit them anytime, or delete them.")
 
-    ingredients = st.session_state.data["ingredients"]
+    ingredients = st.session_state.data.setdefault("ingredients", [])
     editing_idx = st.session_state.editing_ing_idx
-
-    # Edit mode or Add mode form
     is_editing = editing_idx is not None and 0 <= editing_idx < len(ingredients)
-    
+
+    # 1. Edit Mode (Item update karne ke liye)
     if is_editing:
         target_item = ingredients[editing_idx]
         st.markdown(f"**✏️ Editing item: `{target_item['name']}`**")
@@ -865,17 +874,20 @@ def render_ingredients():
             if update_btn:
                 ingredients[editing_idx]["qty"] = new_qty if new_qty > 0 else None
                 ingredients[editing_idx]["unit"] = new_unit if new_unit else None
-                save_data()
+                if "save_data" in globals():
+                    save_data()
                 st.session_state.editing_ing_idx = None
                 st.rerun()
             elif cancel_btn:
                 st.session_state.editing_ing_idx = None
                 st.rerun()
+
+    # 2. Add Mode (Direct Name, Qty & Unit ke sath add karne ke liye)
     else:
         with st.form("add_ingredient", clear_on_submit=True):
             c1, c2, c3, c4 = st.columns([3, 1.2, 1.3, 1])
-            name = c1.text_input("Ingredient Name", placeholder="e.g. Chicken, Tomato")
-            qty = c2.number_input("Qty (Optional)", min_value=0.0, step=0.1, value=0.0, format="%g")
+            name = c1.text_input("Ingredient Name", placeholder="e.g. Tomato, Chicken")
+            qty = c2.number_input("Qty", min_value=0.0, step=0.1, value=0.0, format="%g")
             unit = c3.selectbox("Unit", [""] + UNIT_OPTIONS)
             submitted = c4.form_submit_button("➕ Add", use_container_width=True)
 
@@ -883,26 +895,26 @@ def render_ingredients():
                 cleaned_name = name.strip()
                 if not cleaned_name:
                     st.error("Please enter a valid ingredient name.")
-                elif any(char.isdigit() for char in cleaned_name):
-                    st.error("Ingredient name must be text only.")
                 else:
                     is_duplicate = any(
                         ing["name"].lower() == cleaned_name.lower() 
                         for ing in ingredients
                     )
                     if is_duplicate:
-                        st.warning(f"⚠️ '{cleaned_name}' is already in your pantry! Use the edit button to update its quantity.")
+                        st.warning(f"⚠️ '{cleaned_name}' is already in your pantry!")
                     else:
                         ingredients.append({
                             "name": cleaned_name,
                             "qty": qty if qty > 0 else None,
                             "unit": unit if unit else None
                         })
-                        save_data()
+                        if "save_data" in globals():
+                            save_data()
                         st.rerun()
 
     st.divider()
-    
+
+    # 3. List Display (Pantry items ki list aur Edit/Delete buttons)
     if not ingredients:
         st.info("Your pantry is empty. Add items above!")
     else:
@@ -924,7 +936,8 @@ def render_ingredients():
                     if st.session_state.editing_ing_idx == idx:
                         st.session_state.editing_ing_idx = None
                     ingredients.pop(idx)
-                    save_data()
+                    if "save_data" in globals():
+                        save_data()
                     st.rerun()
 # ---------------------------------------------------------------------------
 # PAGE: Saved Recipes
