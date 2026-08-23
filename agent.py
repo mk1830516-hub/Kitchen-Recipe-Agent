@@ -434,7 +434,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Fixed Clean Styling (No Black Theme Issues / F-String Braces Fixed) ------
+# ---- Fixed Clean Styling with Visible Chat Text ------
 st.markdown(
     f"""
     <style>
@@ -448,7 +448,7 @@ st.markdown(
 
     .stApp {{
         background: #ffffff;
-        color: #2a2a2a;
+        color: #111827 !important;
     }}
 
     section[data-testid="stSidebar"] {{
@@ -460,7 +460,7 @@ st.markdown(
         border-radius: 10px !important;
         border: 1px solid #d1d5db !important;
         background: #ffffff !important;
-        color: #2a2a2a !important;
+        color: #111827 !important;
     }}
     
     .stButton > button[kind="primary"] {{
@@ -471,12 +471,17 @@ st.markdown(
     }}
 
     [data-testid="stChatMessage"] {{
-        background: #f3f4f6;
+        background: #f3f4f6 !important;
         border-radius: 14px;
         border: 1px solid #e5e7eb;
+        color: #111827 !important;
     }}
 
-    h1, h2, h3 {{ color: #111827 !important; }}
+    [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] span, [data-testid="stChatMessage"] div {{
+        color: #111827 !important;
+    }}
+
+    h1, h2, h3, h4, h5, h6 {{ color: #111827 !important; }}
 
     .brand-card {{
         text-align: center; padding: 18px 10px; border-radius: 16px;
