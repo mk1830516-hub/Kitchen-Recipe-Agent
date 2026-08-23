@@ -434,7 +434,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Light, soft styling ----------------------------------------------------
+# ---- Fixed Clean Styling (No Black Theme Issues) ----------------------------
 st.markdown(
     f"""
     <style>
@@ -444,147 +444,69 @@ st.markdown(
     :root {{
         --accent: {ACCENT};
         color-scheme: light;
-    }}
-    html, body, .stApp {{ color-scheme: light; }}
-
-    /* NUCLEAR FIX: force readable dark text everywhere and light
-       backgrounds on the chat input bar, regardless of whether
-       Streamlit's own base theme is actually resolving to light or dark
-       on this deployment. This must come BEFORE the more specific
-       white-text rules further down (hero banner, primary buttons) so
-       those can still override it later in the cascade. */
-    .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
-    [data-testid="stMarkdownContainer"],
-    [data-testid="stMarkdownContainer"] * ,
-    table, th, td {{
-        color: #2a2a2a !important;
-    }}
-    table, th, td {{
-        background: white !important;
-        border-color: #ddd !important;
-    }}
-
-    [data-testid="stChatInput"],
-    [data-testid="stChatInput"] * ,
-    [data-testid="stBottomBlockContainer"],
-    [data-testid="stBottom"],
-    div[class*="stChatFloatingInputContainer"] {{
-        background: white !important;
-        color: #2a2a2a !important;
-    }}
-    [data-testid="stChatInput"] textarea {{
-        background: white !important;
-        color: #2a2a2a !important;
-    }}
-    [data-testid="stChatInput"] textarea::placeholder {{
-        color: #888 !important;
-    }}
-
-    /* Extra defensive layer: force these same rules to win even inside a
-       @media(prefers-color-scheme: dark) context, in case the browser
-       applies its own dark-mode defaults before our theme settles. */
-    @media (prefers-color-scheme: dark) {{
-        :root {{ color-scheme: light !important; }}
-        html, body, .stApp {{
-            color-scheme: light !important;
-            background: white !important;
-        }}
-        header[data-testid="stHeader"], [data-testid="stToolbar"] {{
-            background: white !important;
-            color: #2a2a2a !important;
-        }}
-        section[data-testid="stSidebar"] {{ background: white !important; }}
-    }}
-
-    /* Force light background on Streamlit's own header/toolbar chrome
-       (only the part inside the app's own render area — the very top-right
-       corner buttons like Share/GitHub are Streamlit Community Cloud's own
-       platform chrome and are outside what app code can restyle). */
-    header[data-testid="stHeader"] {{
-        background: white !important;
-    }}
-    [data-testid="stToolbar"] {{ background: white !important; }}
-    header[data-testid="stHeader"] {{ color: #2a2a2a !important; }}
+    }
 
     .stApp {{
-        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, white) 0%, white 280px);
-    }}
+        background: #ffffff;
+        color: #2a2a2a;
+    }
 
     section[data-testid="stSidebar"] {{
-        background: color-mix(in srgb, var(--accent) 3%, white);
-        border-right: 1px solid color-mix(in srgb, var(--accent) 12%, white);
-    }}
+        background: #f8f9fa;
+        border-right: 1px solid #e5e7eb;
+    }
 
     .stButton > button {{
         border-radius: 10px !important;
-        border: 1px solid color-mix(in srgb, var(--accent) 30%, white) !important;
-        background: white !important;
+        border: 1px solid #d1d5db !important;
+        background: #ffffff !important;
         color: #2a2a2a !important;
     }}
-    .stButton > button p, .stButton > button span, .stButton > button div {{
-        color: inherit !important;
-    }}
+    
     .stButton > button[kind="primary"] {{
-        background: color-mix(in srgb, var(--accent) 85%, white) !important;
-        border-color: color-mix(in srgb, var(--accent) 85%, white) !important;
+        background: {ACCENT} !important;
+        border-color: {ACCENT} !important;
         color: white !important;
         font-weight: 600;
     }}
-    .stButton > button[kind="secondary"] {{
-        background: white !important;
-        color: #2a2a2a !important;
-    }}
-    .stButton > button[kind="secondary"]:hover {{
-        border-color: var(--accent) !important;
-        color: var(--accent) !important;
-    }}
-
-    input[type="checkbox"], input[type="radio"] {{ accent-color: var(--accent); }}
-    a {{ color: var(--accent) !important; }}
 
     [data-testid="stChatMessage"] {{
-        background: color-mix(in srgb, var(--accent) 4%, white);
+        background: #f3f4f6;
         border-radius: 14px;
-        border: 1px solid color-mix(in srgb, var(--accent) 10%, white);
-    }}
+        border: 1px solid #e5e7eb;
+    }
 
-    h1, h2, h3 {{ color: color-mix(in srgb, var(--accent) 45%, #2a2a2a) !important; }}
+    h1, h2, h3 {{ color: #111827 !important; }}
 
     .brand-card {{
         text-align: center; padding: 18px 10px; border-radius: 16px;
-        background: color-mix(in srgb, var(--accent) 10%, white);
-        border: 1px solid color-mix(in srgb, var(--accent) 25%, white);
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
         margin-bottom: 12px;
     }}
-    .brand-title {{ font-size: 18px; font-weight: 800; margin-top: 4px; color: #2a2a2a; }}
-    .brand-subtitle {{ font-size: 11.5px; opacity: 0.75; margin-top: 2px; color: #2a2a2a; }}
+    .brand-title {{ font-size: 18px; font-weight: 800; margin-top: 4px; color: #111827; }}
+    .brand-subtitle {{ font-size: 11.5px; opacity: 0.75; margin-top: 2px; color: #4b5563; }}
 
     .hero-banner {{
         padding: 24px 28px; border-radius: 18px;
-        background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, white) 0%, color-mix(in srgb, var(--accent) 28%, white) 100%);
-        margin-bottom: 18px; color: #2a2a2a !important;
-        border: 1px solid color-mix(in srgb, var(--accent) 25%, white);
+        background: #f3f4f6;
+        margin-bottom: 18px; color: #111827 !important;
+        border: 1px solid #e5e7eb;
     }}
-    .hero-greeting {{ font-size: 15px; color: #4a4a4a; margin: 0; font-weight: 500; }}
-    .hero-title {{ font-size: 27px; font-weight: 800; color: #222 !important; margin: 4px 0 0 0; }}
-    .hero-subtitle {{ font-size: 14px; color: #4a4a4a; margin-top: 6px; font-weight: 400; }}
+    .hero-greeting {{ font-size: 15px; color: #4b5563; margin: 0; font-weight: 500; }}
+    .hero-title {{ font-size: 27px; font-weight: 800; color: #111827 !important; margin: 4px 0 0 0; }}
+    .hero-subtitle {{ font-size: 14px; color: #4b5563; margin-top: 6px; font-weight: 400; }}
 
     .status-pill {{
         display: inline-block; padding: 4px 12px; border-radius: 999px;
-        background: color-mix(in srgb, var(--accent) 18%, white);
-        border: 1px solid color-mix(in srgb, var(--accent) 35%, white);
-        font-size: 12px; font-weight: 700; color: #2a2a2a;
-    }}
-    .chip {{
-        display: inline-block; padding: 6px 12px; border-radius: 999px;
-        background: color-mix(in srgb, var(--accent) 10%, white);
-        border: 1px solid color-mix(in srgb, var(--accent) 25%, white);
-        font-size: 12.5px; margin: 3px 4px; font-weight: 500;
+        background: #e5e7eb;
+        border: 1px solid #d1d5db;
+        font-size: 12px; font-weight: 700; color: #111827;
     }}
     .history-card {{
         padding: 10px 12px; border-radius: 10px;
-        background: white; border: 1px solid color-mix(in srgb, var(--accent) 18%, white);
-        margin-bottom: 8px; font-size: 12.5px;
+        background: white; border: 1px solid #e5e7eb;
+        margin-bottom: 8px; font-size: 12.5px; color: #111827;
     }}
     </style>
     """,
@@ -620,7 +542,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Quick accent-color switcher — always visible, no need to open Theme Customize
     st.caption("🎨 Quick theme")
     ACCENT_EMOJI = {
         "Green": "🟢", "Cyan": "🔵", "Blue": "🔷", "Purple": "🟣",
@@ -648,8 +569,6 @@ with st.sidebar:
     current_type = st.session_state.user_type
 
     def _validate_allergy_text(value: str, field_key: str):
-        """Reject purely-numeric allergy/restriction entries — must be a
-        text name (in any language/script), not a number."""
         cleaned = value.strip()
         if cleaned and cleaned.lower() != "none" and cleaned.replace(" ", "").isdigit():
             st.error("Allergy/restriction must be a text name (e.g. peanuts, dairy) — not just a number.")
@@ -664,13 +583,11 @@ with st.sidebar:
             max_value=12,
             value=min(st.session_state.user_age, 12) if isinstance(st.session_state.user_age, int) else 4,
             step=1,
-            help="Age in months — guidance changes significantly under vs over 6 months.",
         )
         raw_allergy = st.text_input(
             "⚠️ Known Allergies (if any):",
             value=st.session_state.user_allergies,
             placeholder="e.g. dairy, egg",
-            help="Leave blank or type 'none' if not applicable. Text only — any language works.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -685,7 +602,6 @@ with st.sidebar:
             "⚠️ Known Food Sensitivities:",
             value=st.session_state.user_allergies,
             placeholder="e.g. chicken, grain-sensitive",
-            help="Foods this pet should avoid, if known. Text only.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -696,13 +612,11 @@ with st.sidebar:
             max_value=120,
             value=st.session_state.user_age if isinstance(st.session_state.user_age, int) and st.session_state.user_age >= 1 else 25,
             step=1,
-            help="Integer age for custom tailoring.",
         )
         raw_allergy = st.text_input(
             "⚠️ Allergies / Restrictions:",
             value=st.session_state.user_allergies,
             placeholder="e.g. potato, dairy, peanuts",
-            help="Dishes containing these will be strictly excluded — any language works, but must be text, not a number.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -748,9 +662,6 @@ with st.sidebar:
                     ]
                     st.rerun()
 
-    st.divider()
-    st.caption("Backend order: Groq → Cohere → Gemini (auto fallback)")
-
 
 # ---------------------------------------------------------------------------
 # PAGE: Home
@@ -782,58 +693,24 @@ def render_home():
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
             <p class="hero-title">What would you like to eat today?</p>
-            <p class="hero-subtitle">Talk in any language (English, Roman Urdu, Urdu script, etc.). Get clean table formats and allergen-safe dishes!</p>
+            <p class="hero-subtitle">Talk in any language, manage ingredients, or chat with your AI Chef.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    input_col, btn_col = st.columns([4, 1])
-    with input_col:
-        home_input = st.text_input(
-            "quick_prompt",
-            placeholder="e.g., Hello! Mujh ko achi si dinner recipe batao (or in English)",
-            label_visibility="collapsed",
-        )
-    with btn_col:
-        find_clicked = st.button("Ask Assistant ✨", use_container_width=True, type="primary")
-
-    if find_clicked and home_input.strip():
-        ask_agent(home_input.strip())
-        st.rerun()
-
-    st.write("")
-    st.subheader("💡 Quick Meal Suggestions")
-
-    ideas = [
-        ("🌅", "Quick breakfast ideas / Nashta"),
-        ("☀️", "Healthy lunch options / Dopahar ka khana"),
-        ("🌙", "Budget dinner recipes / Raat ka khana"),
-        ("⚡", "30-minute fast dishes"),
-    ]
-
-    cols = st.columns(2)
-    for idx, (emoji, label) in enumerate(ideas):
-        with cols[idx % 2]:
-            if st.button(f"{emoji}  {label}", use_container_width=True, key=f"idea_{idx}"):
-                ask_agent(f"Please give me a table-formatted recipe for: {label} matching my language and dietary preferences.")
-                st.rerun()
-
-    if st.session_state.data["ingredients"]:
-        st.write("")
-        st.subheader("🥕 From your pantry ingredients")
-        ing_list = st.session_state.data["ingredients"]
-
-        def _ing_label(i):
-            if i.get("qty") and i.get("unit"):
-                return f"{i['name']} ({i['qty']:g} {i['unit']})"
-            return i["name"]
-
-        chips_html = "".join(f'<span class="chip">{_ing_label(i)}</span>' for i in ing_list)
-        st.markdown(chips_html, unsafe_allow_html=True)
-        if st.button("Generate recipes using my ingredients", type="primary"):
-            summary_str = ", ".join(_ing_label(i) for i in ing_list)
-            ask_agent(f"I have these pantry items: {summary_str}. Give me table-formatted recipes avoiding my restrictions.")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("💬 Open AI Chef Chat", use_container_width=True, type="primary"):
+            st.session_state.page = "AI Chef Chat"
+            st.rerun()
+    with col2:
+        if st.button("🥕 Manage Ingredients", use_container_width=True):
+            st.session_state.page = "My Ingredients"
+            st.rerun()
+    with col3:
+        if st.button("❤️ View Saved Recipes", use_container_width=True):
+            st.session_state.page = "Saved Recipes"
             st.rerun()
 
 
@@ -842,153 +719,110 @@ def render_home():
 # ---------------------------------------------------------------------------
 
 def render_chat():
-    st.markdown(
-        f"""
-        <div class="hero-banner" style="padding: 18px 24px;">
-            <p class="hero-title" style="font-size:22px;">👩‍🍳 AI Chef Chat</p>
-            <p class="hero-subtitle">Chat in any language you prefer. Responses match your exact language, table layout, and allergy rules.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.title("💬 AI Chef Chat")
+    st.caption("Ask for recipes, ingredient substitutes, or meal plans in any language.")
 
-    for i, msg in enumerate(st.session_state.messages):
-        avatar = USER_AVATAR if msg["role"] == "user" else ASSISTANT_AVATAR
-        with st.chat_message(msg["role"], avatar=avatar):
-            st.markdown(msg["content"])
-            if msg["role"] == "assistant":
-                if st.button("💾 Save this recipe", key=f"save_{i}"):
-                    title = msg["content"].split("\n")[0][:60]
-                    st.session_state.data["saved_recipes"].append(
-                        {
-                            "title": title or "Saved recipe",
-                            "content": msg["content"],
-                            "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
-                        }
-                    )
-                    save_data()
-                    st.toast("Recipe saved successfully!")
+    for m in st.session_state.messages:
+        avatar = USER_AVATAR if m["role"] == "user" else ASSISTANT_AVATAR
+        with st.chat_message(m["role"], avatar=avatar):
+            st.markdown(m["content"])
 
-    user_prompt = st.chat_input("Type in English, Roman Urdu, or Urdu script...")
-    if user_prompt:
-        with st.chat_message("user", avatar=USER_AVATAR):
-            st.markdown(user_prompt)
-        with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-            with st.spinner("👩‍🍳 Kitchen Recipe Agent is thinking..."):
-                ask_agent(user_prompt)
+    if user_query := st.chat_input("Ask your AI chef anything about food or cooking..."):
+        ask_agent(user_query)
         st.rerun()
 
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients — name + optional qty/unit, editable, digit-validated
+# PAGE: My Ingredients
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
-    st.subheader("🥕 My Ingredients & Pantry")
-    st.caption("Add items with an optional quantity and unit, edit them anytime, or delete them. Name must be text — any language works.")
+    st.title("🥕 My Ingredients & Pantry")
+    st.caption("Add items with an optional quantity and unit, edit them anytime, or delete them.")
 
-    ingredients = st.session_state.data.setdefault("ingredients", [])
-    editing_idx = st.session_state.editing_ing_idx
-    is_editing = editing_idx is not None and 0 <= editing_idx < len(ingredients)
+    with st.form("add_ingredient_form", clear_on_submit=True):
+        col_name, col_qty, col_unit = st.columns([2, 1, 1])
+        with col_name:
+            new_name = st.text_input("Ingredient Name", placeholder="e.g. Tomatoes")
+        with col_qty:
+            new_qty = st.number_input("Quantity", min_value=0.0, value=1.0, step=0.5)
+        with col_unit:
+            new_unit = st.selectbox("Unit", options=UNIT_OPTIONS)
 
-    # 1. Edit mode — update an existing item's quantity/unit
-    if is_editing:
-        target_item = ingredients[editing_idx]
-        st.markdown(f"**✏️ Editing item: `{target_item['name']}`**")
-        with st.form("edit_ingredient_form"):
-            c1, c2, c3 = st.columns([1.5, 1.5, 1])
-            new_qty = c1.number_input(
-                "Qty", min_value=0.0, step=0.1,
-                value=float(target_item.get("qty") or 0.0), format="%g",
-            )
-            unit_list = [""] + UNIT_OPTIONS
-            current_unit = target_item.get("unit") or ""
-            u_index = unit_list.index(current_unit) if current_unit in unit_list else 0
-            new_unit = c2.selectbox("Unit", unit_list, index=u_index)
-
-            update_btn = c3.form_submit_button("💾 Save", use_container_width=True)
-            cancel_btn = c3.form_submit_button("❌ Cancel", use_container_width=True)
-
-            if update_btn:
-                ingredients[editing_idx]["qty"] = new_qty if new_qty > 0 else None
-                ingredients[editing_idx]["unit"] = new_unit if new_unit else None
+        submitted = st.form_submit_button("➕ Add Ingredient", type="primary")
+        if submitted:
+            if new_name.strip():
+                st.session_state.data["ingredients"].append({
+                    "name": new_name.strip(),
+                    "qty": new_qty,
+                    "unit": new_unit,
+                })
                 save_data()
-                st.session_state.editing_ing_idx = None
+                st.success(f"Added {new_name.strip()}!")
                 st.rerun()
-            elif cancel_btn:
-                st.session_state.editing_ing_idx = None
-                st.rerun()
-
-    # 2. Add mode — name (validated as text) + optional qty/unit
-    else:
-        with st.form("add_ingredient", clear_on_submit=True):
-            c1, c2, c3, c4 = st.columns([3, 1.2, 1.3, 1])
-            name = c1.text_input("Ingredient Name", placeholder="e.g. Tomato, Chicken, چکن")
-            qty = c2.number_input("Qty", min_value=0.0, step=0.1, value=0.0, format="%g")
-            unit = c3.selectbox("Unit", [""] + UNIT_OPTIONS)
-            submitted = c4.form_submit_button("➕ Add", use_container_width=True)
-
-            if submitted:
-                cleaned_name = name.strip()
-                if not cleaned_name:
-                    st.error("Please enter a valid ingredient name.")
-                elif any(char.isdigit() for char in cleaned_name):
-                    st.error("Ingredient name must be text (any language) — not a number.")
-                elif any(ing["name"].lower() == cleaned_name.lower() for ing in ingredients):
-                    st.warning(f"⚠️ '{cleaned_name}' is already in your pantry!")
-                else:
-                    ingredients.append({
-                        "name": cleaned_name,
-                        "qty": qty if qty > 0 else None,
-                        "unit": unit if unit else None,
-                    })
-                    save_data()
-                    st.rerun()
+            else:
+                st.error("Please enter a valid ingredient name.")
 
     st.divider()
+    ingredients = st.session_state.data["ingredients"]
 
-    # 3. List with Edit/Delete
     if not ingredients:
-        st.info("Your pantry is empty. Add items above!")
+        st.info("Your pantry is currently empty. Add some ingredients above!")
     else:
         for idx, ing in enumerate(ingredients):
-            col_info, col_edit, col_del = st.columns([4, 1, 1])
-            with col_info:
-                display_text = f"**{ing['name']}**"
-                if ing.get("qty") and ing.get("unit"):
-                    display_text += f" — {ing['qty']:g} {ing['unit']}"
-                elif ing.get("qty"):
-                    display_text += f" — {ing['qty']:g}"
-                st.markdown(display_text)
-            with col_edit:
+            c1, c2, c3 = st.columns([3, 1, 1])
+            with c1:
+                st.markdown(f"**{ing['name']}** — {ing['qty']} {ing['unit']}")
+            with c2:
                 if st.button("✏️ Edit", key=f"edit_ing_{idx}"):
                     st.session_state.editing_ing_idx = idx
                     st.rerun()
-            with col_del:
-                if st.button("🗑️ Del", key=f"del_ing_{idx}"):
-                    if st.session_state.editing_ing_idx == idx:
-                        st.session_state.editing_ing_idx = None
-                    ingredients.pop(idx)
+            with c3:
+                if st.button("🗑️ Delete", key=f"del_ing_{idx}"):
+                    st.session_state.data["ingredients"].pop(idx)
                     save_data()
                     st.rerun()
+
+    if st.session_state.editing_ing_idx is not None:
+        idx = st.session_state.editing_ing_idx
+        if idx < len(ingredients):
+            st.divider()
+            st.subheader(f"Editing: {ingredients[idx]['name']}")
+            with st.form("edit_form"):
+                e_name = st.text_input("Name", value=ingredients[idx]["name"])
+                e_qty = st.number_input("Qty", min_value=0.0, value=float(ingredients[idx]["qty"]), step=0.5)
+                e_unit = st.selectbox("Unit", options=UNIT_OPTIONS, index=UNIT_OPTIONS.index(ingredients[idx]["unit"]) if ingredients[idx]["unit"] in UNIT_OPTIONS else 0)
+                
+                col_save, col_cancel = st.columns(2)
+                with col_save:
+                    if st.form_submit_button("💾 Save Changes", type="primary"):
+                        st.session_state.data["ingredients"][idx] = {"name": e_name, "qty": e_qty, "unit": e_unit}
+                        save_data()
+                        st.session_state.editing_ing_idx = None
+                        st.rerun()
+                with col_cancel:
+                    if st.form_submit_button("❌ Cancel"):
+                        st.session_state.editing_ing_idx = None
+                        st.rerun()
 
 
 # ---------------------------------------------------------------------------
 # PAGE: Saved Recipes
 # ---------------------------------------------------------------------------
 
-def render_saved_recipes():
-    st.subheader("❤️ Saved Recipes")
+def render_saved():
+    st.title("❤️ Saved Recipes")
+    st.caption("Your favorite recipes bookmarked for quick access.")
+
     saved = st.session_state.data["saved_recipes"]
     if not saved:
-        st.info("No saved recipes yet. Save recipes from the chat page!")
+        st.info("No saved recipes yet. Ask the AI Chef Chat for a recipe and save it!")
     else:
-        for idx, rec in enumerate(reversed(saved)):
-            real_idx = len(saved) - 1 - idx
-            with st.expander(f"📖 {rec['title']} ({rec.get('timestamp', '')[:10]})"):
-                st.markdown(rec["content"])
-                if st.button("🗑️ Delete Recipe", key=f"del_rec_{real_idx}"):
-                    saved.pop(real_idx)
+        for idx, rec in enumerate(saved):
+            with st.expander(f"📖 {rec.get('title', 'Recipe')}"):
+                st.markdown(rec.get("content", ""))
+                if st.button("🗑️ Remove", key=f"del_rec_{idx}"):
+                    st.session_state.data["saved_recipes"].pop(idx)
                     save_data()
                     st.rerun()
 
@@ -998,33 +832,26 @@ def render_saved_recipes():
 # ---------------------------------------------------------------------------
 
 def render_theme():
-    st.subheader("🎨 Theme Customize")
-    st.caption("Pick an accent color to instantly re-theme the entire application.")
+    st.title("🎨 Theme Customization")
+    st.caption("Choose your preferred primary accent color for the application.")
 
-    cols = st.columns(len(ACCENT_OPTIONS))
-    for col, (name, hex_val) in zip(cols, ACCENT_OPTIONS.items()):
-        with col:
-            is_selected = st.session_state.accent == name
-            label = f"✅ {name}" if is_selected else name
-            if st.button(label, key=f"accent_{name}", use_container_width=True):
-                st.session_state.accent = name
-                st.rerun()
-            st.markdown(
-                f"""<div style="height:26px; border-radius:8px; background:{hex_val}; margin-top:4px;"></div>""",
-                unsafe_allow_html=True,
-            )
+    selected = st.radio("Select Accent Color:", options=list(ACCENT_OPTIONS.keys()), index=list(ACCENT_OPTIONS.keys()).index(st.session_state.accent))
+    if selected != st.session_state.accent:
+        st.session_state.accent = selected
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------
-# Router
+# Main Router
 # ---------------------------------------------------------------------------
 
-PAGES = {
-    "Home": render_home,
-    "AI Chef Chat": render_chat,
-    "My Ingredients": render_ingredients,
-    "Saved Recipes": render_saved_recipes,
-    "Theme Customize": render_theme,
-}
-
-PAGES[st.session_state.page]()
+if st.session_state.page == "Home":
+    render_home()
+elif st.session_state.page == "AI Chef Chat":
+    render_chat()
+elif st.session_state.page == "My Ingredients":
+    render_ingredients()
+elif st.session_state.page == "Saved Recipes":
+    render_saved()
+elif st.session_state.page == "Theme Customize":
+    render_theme()
