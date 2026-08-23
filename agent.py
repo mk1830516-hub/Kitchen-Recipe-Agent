@@ -434,7 +434,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Fixed Clean Styling (No Black Theme Issues) ----------------------------
+# ---- Fixed Clean Styling (No Black Theme Issues / F-String Braces Fixed) ------
 st.markdown(
     f"""
     <style>
@@ -444,17 +444,17 @@ st.markdown(
     :root {{
         --accent: {ACCENT};
         color-scheme: light;
-    }
+    }}
 
     .stApp {{
         background: #ffffff;
         color: #2a2a2a;
-    }
+    }}
 
     section[data-testid="stSidebar"] {{
         background: #f8f9fa;
         border-right: 1px solid #e5e7eb;
-    }
+    }}
 
     .stButton > button {{
         border-radius: 10px !important;
@@ -474,7 +474,7 @@ st.markdown(
         background: #f3f4f6;
         border-radius: 14px;
         border: 1px solid #e5e7eb;
-    }
+    }}
 
     h1, h2, h3 {{ color: #111827 !important; }}
 
