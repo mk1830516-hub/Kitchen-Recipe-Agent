@@ -434,7 +434,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Fixed Clean Styling with Visible Chat Text ------
+# ---- Light, soft styling (Fixed Visibility & Black Text) --------------------
 st.markdown(
     f"""
     <style>
@@ -445,15 +445,50 @@ st.markdown(
         --accent: {ACCENT};
         color-scheme: light;
     }}
+    html, body, .stApp {{ color-scheme: light; background: #ffffff !important; }}
 
-    .stApp {{
-        background: #ffffff;
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stMarkdownContainer"] * ,
+    table, th, td {{
         color: #111827 !important;
     }}
+    table, th, td {{
+        background: #ffffff !important;
+        border-color: #d1d5db !important;
+    }}
+
+    [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input, [data-testid="stSelectbox"] select {{
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+    }}
+
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"] * ,
+    [data-testid="stBottomBlockContainer"],
+    [data-testid="stBottom"],
+    div[class*="stChatFloatingInputContainer"] {{
+        background: #ffffff !important;
+        color: #111827 !important;
+    }}
+    [data-testid="stChatInput"] textarea {{
+        background: #ffffff !important;
+        color: #111827 !important;
+    }}
+    [data-testid="stChatInput"] textarea::placeholder {{
+        color: #6b7280 !important;
+    }}
+
+    header[data-testid="stHeader"] {{
+        background: #ffffff !important;
+        color: #111827 !important;
+    }}
+    [data-testid="stToolbar"] {{ background: #ffffff !important; }}
 
     section[data-testid="stSidebar"] {{
-        background: #f8f9fa;
-        border-right: 1px solid #e5e7eb;
+        background: #f9fafb !important;
+        border-right: 1px solid #e5e7eb !important;
     }}
 
     .stButton > button {{
@@ -461,14 +496,28 @@ st.markdown(
         border: 1px solid #d1d5db !important;
         background: #ffffff !important;
         color: #111827 !important;
+        font-weight: 500;
     }}
-    
+    .stButton > button p, .stButton > button span, .stButton > button div {{
+        color: inherit !important;
+    }}
     .stButton > button[kind="primary"] {{
         background: {ACCENT} !important;
         border-color: {ACCENT} !important;
-        color: white !important;
+        color: #ffffff !important;
         font-weight: 600;
     }}
+    .stButton > button[kind="secondary"] {{
+        background: #ffffff !important;
+        color: #111827 !important;
+    }}
+    .stButton > button[kind="secondary"]:hover {{
+        border-color: {ACCENT} !important;
+        color: {ACCENT} !important;
+    }}
+
+    input[type="checkbox"], input[type="radio"] {{ accent-color: {ACCENT}; }}
+    a {{ color: {ACCENT} !important; }}
 
     [data-testid="stChatMessage"] {{
         background: #f3f4f6 !important;
@@ -477,11 +526,7 @@ st.markdown(
         color: #111827 !important;
     }}
 
-    [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] span, [data-testid="stChatMessage"] div {{
-        color: #111827 !important;
-    }}
-
-    h1, h2, h3, h4, h5, h6 {{ color: #111827 !important; }}
+    h1, h2, h3 {{ color: #111827 !important; }}
 
     .brand-card {{
         text-align: center; padding: 18px 10px; border-radius: 16px;
@@ -508,9 +553,15 @@ st.markdown(
         border: 1px solid #d1d5db;
         font-size: 12px; font-weight: 700; color: #111827;
     }}
+    .chip {{
+        display: inline-block; padding: 6px 12px; border-radius: 999px;
+        background: #e5e7eb;
+        border: 1px solid #d1d5db;
+        font-size: 12.5px; margin: 3px 4px; font-weight: 500; color: #111827;
+    }}
     .history-card {{
         padding: 10px 12px; border-radius: 10px;
-        background: white; border: 1px solid #e5e7eb;
+        background: #ffffff; border: 1px solid #e5e7eb;
         margin-bottom: 8px; font-size: 12.5px; color: #111827;
     }}
     </style>
@@ -547,7 +598,8 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption("🎨 Quick theme")
+    # Quick accent-color switcher — always visible, clearly visible colors & names
+    st.caption("🎨 Quick theme (Click to change)")
     ACCENT_EMOJI = {
         "Green": "🟢", "Cyan": "🔵", "Blue": "🔷", "Purple": "🟣",
         "Pink": "🌸", "Orange": "🟠", "Yellow": "🟡",
@@ -558,9 +610,10 @@ with st.sidebar:
             label = ACCENT_EMOJI.get(name, "⚪")
             if st.session_state.accent == name:
                 label += "✓"
-            if st.button(label, key=f"quick_accent_{name}", help=name, use_container_width=True):
+            if st.button(label, key=f"quick_accent_{name}", help=f"Theme: {name}", use_container_width=True):
                 st.session_state.accent = name
                 st.rerun()
+    st.markdown(f"<div style='text-align: center; font-size: 11px; color: #374151; font-weight: 700; margin-top: 4px;'>Active: {st.session_state.accent}</div>", unsafe_allow_html=True)
 
     st.divider()
 
@@ -588,11 +641,13 @@ with st.sidebar:
             max_value=12,
             value=min(st.session_state.user_age, 12) if isinstance(st.session_state.user_age, int) else 4,
             step=1,
+            help="Age in months — guidance changes significantly under vs over 6 months.",
         )
         raw_allergy = st.text_input(
             "⚠️ Known Allergies (if any):",
             value=st.session_state.user_allergies,
             placeholder="e.g. dairy, egg",
+            help="Leave blank or type 'none' if not applicable. Text only — any language works.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -607,6 +662,7 @@ with st.sidebar:
             "⚠️ Known Food Sensitivities:",
             value=st.session_state.user_allergies,
             placeholder="e.g. chicken, grain-sensitive",
+            help="Foods this pet should avoid, if known. Text only.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -617,11 +673,13 @@ with st.sidebar:
             max_value=120,
             value=st.session_state.user_age if isinstance(st.session_state.user_age, int) and st.session_state.user_age >= 1 else 25,
             step=1,
+            help="Integer age for custom tailoring.",
         )
         raw_allergy = st.text_input(
             "⚠️ Allergies / Restrictions:",
             value=st.session_state.user_allergies,
             placeholder="e.g. potato, dairy, peanuts",
+            help="Dishes containing these will be strictly excluded — any language works, but must be text, not a number.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -667,9 +725,12 @@ with st.sidebar:
                     ]
                     st.rerun()
 
+    st.divider()
+    st.caption("Backend order: Groq → Cohere → Gemini (auto fallback)")
+
 
 # ---------------------------------------------------------------------------
-# PAGE: Home
+# PAGE: Home (With Pantry Ingredients Display & Profile Suggestions)
 # ---------------------------------------------------------------------------
 
 def render_home():
@@ -697,8 +758,8 @@ def render_home():
         <div class="hero-banner">
             <span class="status-pill">✨ {profile_badge}</span>
             <p class="hero-greeting" style="margin-top:10px;">👋 Welcome to your Smart Kitchen Dashboard</p>
-            <p class="hero-title">What would you like to eat today?</p>
-            <p class="hero-subtitle">Talk in any language, manage ingredients, or chat with your AI Chef.</p>
+            <p class="hero-title">What would you like to cook today?</p>
+            <p class="hero-subtitle">Select a profile above, add ingredients to your pantry, or ask your AI Chef directly!</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -716,6 +777,34 @@ def render_home():
     with col3:
         if st.button("❤️ View Saved Recipes", use_container_width=True):
             st.session_state.page = "Saved Recipes"
+            st.rerun()
+
+    st.divider()
+
+    # Pantry Quick View & Direct Prompting based on added ingredients
+    st.subheader("🛒 Your Pantry Ingredients & Quick Suggestions")
+    ingredients = st.session_state.data["ingredients"]
+    
+    if ingredients:
+        ing_list_str = ", ".join([f"{i['qty']} {i['unit']} {i['name']}" for i in ingredients])
+        st.info(f"**Available Pantry Items:** {ing_list_str}")
+        
+        if st.button("🍳 Cook something using my pantry ingredients!", use_container_width=True, type="primary"):
+            prompt = f"I am cooking for profile '{current_profile}'. My available pantry ingredients are: {ing_list_str}. Please suggest a delicious recipe using these ingredients."
+            ask_agent(prompt)
+            st.rerun()
+    else:
+        st.warning("Your pantry is empty! Add ingredients in the 'My Ingredients' section to see them here and get custom pantry-based recipe suggestions.")
+
+    st.subheader("💡 Quick Suggestions for Selected Profile")
+    sug_col1, sug_col2 = st.columns(2)
+    with sug_col1:
+        if st.button(f"🥗 Healthy Breakfast for {current_profile if current_profile != 'Select Profile / Default' else 'Adult'}", use_container_width=True):
+            ask_agent(f"Suggest a healthy breakfast recipe suitable for a {current_profile}.")
+            st.rerun()
+    with sug_col2:
+        if st.button(f"🍲 Easy Dinner Idea for {current_profile if current_profile != 'Select Profile / Default' else 'Adult'}", use_container_width=True):
+            ask_agent(f"Suggest a quick and easy dinner recipe suitable for a {current_profile}.")
             st.rerun()
 
 
@@ -787,28 +876,6 @@ def render_ingredients():
                     st.session_state.data["ingredients"].pop(idx)
                     save_data()
                     st.rerun()
-
-    if st.session_state.editing_ing_idx is not None:
-        idx = st.session_state.editing_ing_idx
-        if idx < len(ingredients):
-            st.divider()
-            st.subheader(f"Editing: {ingredients[idx]['name']}")
-            with st.form("edit_form"):
-                e_name = st.text_input("Name", value=ingredients[idx]["name"])
-                e_qty = st.number_input("Qty", min_value=0.0, value=float(ingredients[idx]["qty"]), step=0.5)
-                e_unit = st.selectbox("Unit", options=UNIT_OPTIONS, index=UNIT_OPTIONS.index(ingredients[idx]["unit"]) if ingredients[idx]["unit"] in UNIT_OPTIONS else 0)
-                
-                col_save, col_cancel = st.columns(2)
-                with col_save:
-                    if st.form_submit_button("💾 Save Changes", type="primary"):
-                        st.session_state.data["ingredients"][idx] = {"name": e_name, "qty": e_qty, "unit": e_unit}
-                        save_data()
-                        st.session_state.editing_ing_idx = None
-                        st.rerun()
-                with col_cancel:
-                    if st.form_submit_button("❌ Cancel"):
-                        st.session_state.editing_ing_idx = None
-                        st.rerun()
 
 
 # ---------------------------------------------------------------------------
