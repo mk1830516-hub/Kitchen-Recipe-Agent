@@ -13,5 +13,5 @@ codeTextColor = "#222222"
 gatherUsageStats = false
 
 [client]
-toolbarMode = "minimal"
+toolbarMode = "auto"
 showSidebarNavigation = true
