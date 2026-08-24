@@ -434,7 +434,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Light, soft styling (Fixed Visibility & Black Text) --------------------
+# ---- Light styling (Proper Header & GitHub Icon visibility fix) -------------
 st.markdown(
     f"""
     <style>
@@ -481,12 +481,11 @@ st.markdown(
     }}
 
     header[data-testid="stHeader"] {{
-        background: #ffffff !important;
-        color: #111827 !important;
+        background: transparent !important;
     }}
-    [data-testid="stToolbar"] {{ background: #ffffff !important; }}
+    [data-testid="stToolbar"] {{ background: transparent !important; }}
 
-    /* Top-right Toolbar / GitHub Icons strictly Dark/Black */
+    /* Top-right GitHub and Header Icons strictly Black & Visible */
     [data-testid="stToolbar"] svg, 
     [data-testid="stDecoration"] svg,
     header[data-testid="stHeader"] svg,
@@ -503,6 +502,7 @@ st.markdown(
         color: #111827 !important;
         opacity: 1 !important;
     }}
+
     section[data-testid="stSidebar"] {{
         background: #f9fafb !important;
         border-right: 1px solid #e5e7eb !important;
