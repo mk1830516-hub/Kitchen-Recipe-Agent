@@ -904,14 +904,21 @@ def render_saved():
 # ---------------------------------------------------------------------------
 
 def render_theme():
-    st.title("🎨 Theme Customization")
-    st.caption("Choose your preferred primary accent color for the application.")
+    st.subheader("🎨 Theme Customize")
+    st.caption("Pick an accent color to instantly re-theme the entire application.")
 
-    selected = st.radio("Select Accent Color:", options=list(ACCENT_OPTIONS.keys()), index=list(ACCENT_OPTIONS.keys()).index(st.session_state.accent))
-    if selected != st.session_state.accent:
-        st.session_state.accent = selected
-        st.rerun()
-
+    cols = st.columns(len(ACCENT_OPTIONS))
+    for col, (name, hex_val) in zip(cols, ACCENT_OPTIONS.items()):
+        with col:
+            is_selected = st.session_state.accent == name
+            label = f"✅ {name}" if is_selected else name
+            if st.button(label, key=f"accent_{name}", use_container_width=True):
+                st.session_state.accent = name
+                st.rerun()
+            st.markdown(
+                f"""<div style="height:26px; border-radius:8px; background:{hex_val}; margin-top:4px;"></div>""",
+                unsafe_allow_html=True,
+            )
 
 # ---------------------------------------------------------------------------
 # Main Router
