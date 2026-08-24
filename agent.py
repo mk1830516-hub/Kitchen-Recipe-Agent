@@ -567,64 +567,70 @@ st.markdown(
     }}
 
     /* GitHub, Star, Edit and Share icons stay strictly Black & Visible */
-    header[data-testid="stHeader"] a[href*="github" i],
     header[data-testid="stHeader"] a[href*="github" i] svg,
     header[data-testid="stHeader"] a[href*="github" i] path,
-    .stAppHeader a[href*="github" i],
     .stAppHeader a[href*="github" i] svg,
     .stAppHeader a[href*="github" i] path,
-    [data-testid="stToolbar"] a[href*="github" i],
     [data-testid="stToolbar"] a[href*="github" i] svg,
     [data-testid="stToolbar"] a[href*="github" i] path,
-    [data-testid="stAppToolbar"] a[href*="github" i],
     [data-testid="stAppToolbar"] a[href*="github" i] svg,
     [data-testid="stAppToolbar"] a[href*="github" i] path,
-    header[data-testid="stHeader"] [title*="GitHub" i],
     header[data-testid="stHeader"] [title*="GitHub" i] svg,
     header[data-testid="stHeader"] [title*="GitHub" i] path,
-    header[data-testid="stHeader"] [aria-label*="GitHub" i],
     header[data-testid="stHeader"] [aria-label*="GitHub" i] svg,
     header[data-testid="stHeader"] [aria-label*="GitHub" i] path,
-    header[data-testid="stHeader"] [title*="View source" i],
-    header[data-testid="stHeader"] [aria-label*="View source" i],
-    .stAppHeader [title*="GitHub" i],
-    .stAppHeader [aria-label*="GitHub" i],
-    .stAppHeader [title*="View source" i],
-    .stAppHeader [aria-label*="View source" i],
-    header[data-testid="stHeader"] [title*="Star" i],
+    header[data-testid="stHeader"] [title*="View source" i] svg,
+    header[data-testid="stHeader"] [aria-label*="View source" i] svg,
+    .stAppHeader [title*="GitHub" i] svg,
+    .stAppHeader [aria-label*="GitHub" i] svg,
+    .stAppHeader [title*="View source" i] svg,
+    .stAppHeader [aria-label*="View source" i] svg,
     header[data-testid="stHeader"] [title*="Star" i] svg,
     header[data-testid="stHeader"] [title*="Star" i] path,
-    header[data-testid="stHeader"] [aria-label*="Star" i],
     header[data-testid="stHeader"] [aria-label*="Star" i] svg,
     header[data-testid="stHeader"] [aria-label*="Star" i] path,
-    .stAppHeader [title*="Star" i],
-    .stAppHeader [aria-label*="Star" i],
-    header[data-testid="stHeader"] [title*="Edit" i],
+    .stAppHeader [title*="Star" i] svg,
+    .stAppHeader [aria-label*="Star" i] svg,
     header[data-testid="stHeader"] [title*="Edit" i] svg,
     header[data-testid="stHeader"] [title*="Edit" i] path,
-    header[data-testid="stHeader"] [aria-label*="Edit" i],
     header[data-testid="stHeader"] [aria-label*="Edit" i] svg,
     header[data-testid="stHeader"] [aria-label*="Edit" i] path,
-    .stAppHeader [title*="Edit" i],
-    .stAppHeader [aria-label*="Edit" i],
-    header[data-testid="stHeader"] [title*="Share" i],
+    .stAppHeader [title*="Edit" i] svg,
+    .stAppHeader [aria-label*="Edit" i] svg,
     header[data-testid="stHeader"] [title*="Share" i] svg,
     header[data-testid="stHeader"] [title*="Share" i] path,
-    header[data-testid="stHeader"] [aria-label*="Share" i],
     header[data-testid="stHeader"] [aria-label*="Share" i] svg,
     header[data-testid="stHeader"] [aria-label*="Share" i] path,
-    .stAppHeader [title*="Share" i],
-    .stAppHeader [aria-label*="Share" i],
-    [data-testid="stToolbar"] [title*="Star" i],
-    [data-testid="stToolbar"] [title*="Edit" i],
-    [data-testid="stToolbar"] [title*="Share" i],
-    [data-testid="stAppToolbar"] [title*="Star" i],
-    [data-testid="stAppToolbar"] [title*="Edit" i],
-    [data-testid="stAppToolbar"] [title*="Share" i] {
+    .stAppHeader [title*="Share" i] svg,
+    .stAppHeader [aria-label*="Share" i] svg,
+    [data-testid="stToolbar"] [title*="Star" i] svg,
+    [data-testid="stToolbar"] [title*="Edit" i] svg,
+    [data-testid="stToolbar"] [title*="Share" i] svg,
+    [data-testid="stAppToolbar"] [title*="Star" i] svg,
+    [data-testid="stAppToolbar"] [title*="Edit" i] svg,
+    [data-testid="stAppToolbar"] [title*="Share" i] svg,
+    #GithubIcon,
+    #GithubIcon svg,
+    #GithubIcon path,
+    .viewerBadge_container__1QSob svg,
+    .viewerBadge_container__1QSob path,
+    .styles_viewerBadge__1yB5_ svg,
+    .styles_viewerBadge__1yB5_ path,
+    [class*="viewerBadge_"] svg,
+    [class*="viewerBadge_"] path,
+    [class*="styles_viewerBadge"] svg,
+    [class*="styles_viewerBadge"] path {{
         fill: #111827 !important;
         color: #111827 !important;
         opacity: 1 !important;
-    }
+    }}
+
+
+    section[data-testid="stSidebar"] {{
+        background: #f9fafb !important;
+        border-right: 1px solid #e5e7eb !important;
+    }}
+
     .stButton > button {{
         border-radius: 10px !important;
         border: 1px solid #d1d5db !important;
