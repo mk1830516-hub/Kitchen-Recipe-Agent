@@ -74,8 +74,7 @@ GEMINI_API_KEY = get_key("GEMINI_API_KEY")
 
 
 # ---------------------------------------------------------------------------
-# System prompt — dynamic language matching, strict profile/allergy rules,
-# kitchen-only domain, budget-friendly Markdown-table formatting
+# System prompt
 # ---------------------------------------------------------------------------
 
 USER_TYPES = [
@@ -286,7 +285,7 @@ def clear_chat_history() -> None:
 
 
 # ---------------------------------------------------------------------------
-# LLM backends (Groq -> Cohere -> Gemini fallback)
+# LLM backends
 # ---------------------------------------------------------------------------
 
 def call_groq(system_prompt: str, history: list, user_prompt: str) -> str:
@@ -335,7 +334,6 @@ def call_gemini(system_prompt: str, history: list, user_prompt: str) -> str:
 
 
 def get_ai_response(system_prompt: str, history: list, user_prompt: str) -> tuple[str, str]:
-    """Backend priority: Groq -> Cohere -> Gemini, explicit if/elif/else."""
     errors = []
 
     if GROQ_API_KEY:
@@ -434,7 +432,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Light, soft styling (Fixed Top Icons Visibility & White Icon Elements) ----
+# ---- Dynamic Styling: White Active Nav/Icons & Black Chat/Content Text ----
 st.markdown(
     f"""
     <style>
@@ -458,57 +456,24 @@ st.markdown(
         border-color: #d1d5db !important;
     }}
 
-    /* Top-right GitHub, Edit, Share & Streamlit Toolbar Icons Dark Black & Visible */
+    /* Top-right Toolbar Icons */
     [data-testid="stToolbar"] svg, 
     [data-testid="stDecoration"] svg,
     header[data-testid="stHeader"] svg,
-    header[data-testid="stHeader"] button svg {{
+    header[data-testid="stHeader"] button svg,
+    header[data-testid="stHeader"] path,
+    [data-testid="stToolbar"] path {{
         fill: #000000 !important;
         color: #000000 !important;
+        opacity: 1 !important;
     }}
-    header[data-testid="stHeader"] a {{
+    header[data-testid="stHeader"] a,
+    header[data-testid="stHeader"] button {{
         color: #000000 !important;
+        opacity: 1 !important;
     }}
 
-    /* Ensure specific secondary buttons / interface icons stay white or contrasting */
-    .stButton button svg {{
-        fill: #ffffff !important;
-        color: #ffffff !important;
-    }}
-
-    [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input, [data-testid="stSelectbox"] select {{
-        background-color: #ffffff !important;
-        color: #111827 !important;
-        border: 1px solid #d1d5db !important;
-    }}
-
-    [data-testid="stChatInput"],
-    [data-testid="stChatInput"] * ,
-    [data-testid="stBottomBlockContainer"],
-    [data-testid="stBottom"],
-    div[class*="stChatFloatingInputContainer"] {{
-        background: #ffffff !important;
-        color: #111827 !important;
-    }}
-    [data-testid="stChatInput"] textarea {{
-        background: #ffffff !important;
-        color: #111827 !important;
-    }}
-    [data-testid="stChatInput"] textarea::placeholder {{
-        color: #6b7280 !important;
-    }}
-
-    header[data-testid="stHeader"] {{
-        background: #ffffff !important;
-        color: #111827 !important;
-    }}
-    [data-testid="stToolbar"] {{ background: #ffffff !important; }}
-
-    section[data-testid="stSidebar"] {{
-        background: #f9fafb !important;
-        border-right: 1px solid #e5e7eb !important;
-    }}
-
+    /* Standard and Secondary Buttons */
     .stButton > button {{
         border-radius: 10px !important;
         border: 1px solid #d1d5db !important;
@@ -519,19 +484,20 @@ st.markdown(
     .stButton > button p, .stButton > button span, .stButton > button div {{
         color: inherit !important;
     }}
+    
+    /* Primary Buttons (Kitchen Profile & Navigation Active items) white icons & text */
     .stButton > button[kind="primary"] {{
         background: {ACCENT} !important;
         border-color: {ACCENT} !important;
         color: #ffffff !important;
         font-weight: 600;
     }}
-    .stButton > button[kind="primary"] p, .stButton > button[kind="primary"] span {{
+    .stButton > button[kind="primary"] p, 
+    .stButton > button[kind="primary"] span,
+    .stButton > button[kind="primary"] div {{
         color: #ffffff !important;
     }}
-    .stButton > button[kind="secondary"] {{
-        background: #ffffff !important;
-        color: #111827 !important;
-    }}
+
     .stButton > button[kind="secondary"]:hover {{
         border-color: {ACCENT} !important;
         color: {ACCENT} !important;
@@ -591,7 +557,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — Branding, Navigation, Profile, Age, Allergies, quick theme & history
+# Sidebar
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
@@ -619,7 +585,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Quick accent-color switcher — always visible, clearly visible colors & names
     st.caption("🎨 Quick theme (Click to change)")
     ACCENT_EMOJI = {
         "Green": "🟢", "Cyan": "🔵", "Blue": "🔷", "Purple": "🟣",
@@ -662,13 +627,11 @@ with st.sidebar:
             max_value=12,
             value=min(st.session_state.user_age, 12) if isinstance(st.session_state.user_age, int) else 4,
             step=1,
-            help="Age in months — guidance changes significantly under vs over 6 months.",
         )
         raw_allergy = st.text_input(
             "⚠️ Known Allergies (if any):",
             value=st.session_state.user_allergies,
             placeholder="e.g. dairy, egg",
-            help="Leave blank or type 'none' if not applicable. Text only — any language works.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -676,14 +639,12 @@ with st.sidebar:
         st.session_state.user_age = st.text_input(
             "🐾 Pet type (e.g. Dog, Cat, Bird, Rabbit):",
             value=st.session_state.get("pet_type", "Dog"),
-            placeholder="e.g. Dog, Cat, Bird, Rabbit",
         )
         st.session_state.pet_type = st.session_state.user_age
         raw_allergy = st.text_input(
             "⚠️ Known Food Sensitivities:",
             value=st.session_state.user_allergies,
             placeholder="e.g. chicken, grain-sensitive",
-            help="Foods this pet should avoid, if known. Text only.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -694,13 +655,11 @@ with st.sidebar:
             max_value=120,
             value=st.session_state.user_age if isinstance(st.session_state.user_age, int) and st.session_state.user_age >= 1 else 25,
             step=1,
-            help="Integer age for custom tailoring.",
         )
         raw_allergy = st.text_input(
             "⚠️ Allergies / Restrictions:",
             value=st.session_state.user_allergies,
             placeholder="e.g. potato, dairy, peanuts",
-            help="Dishes containing these will be strictly excluded — any language works, but must be text, not a number.",
         )
         st.session_state.user_allergies = _validate_allergy_text(raw_allergy, "user_allergies")
 
@@ -735,7 +694,7 @@ with st.sidebar:
                     unsafe_allow_html=True,
                 )
             with col_del:
-                if st.button("❌", key=f"del_pair_{idx}", help="Delete conversation turn"):
+                if st.button("❌", key=f"del_pair_{idx}"):
                     if u_turn in st.session_state.data["conversations"]:
                         st.session_state.data["conversations"].remove(u_turn)
                     if a_turn and a_turn in st.session_state.data["conversations"]:
@@ -746,12 +705,9 @@ with st.sidebar:
                     ]
                     st.rerun()
 
-    st.divider()
-    st.caption("Backend order: Groq → Cohere → Gemini (auto fallback)")
-
 
 # ---------------------------------------------------------------------------
-# PAGE: Home (With Pantry Ingredients Display & Profile Suggestions)
+# PAGE: Home
 # ---------------------------------------------------------------------------
 
 def render_home():
@@ -802,7 +758,6 @@ def render_home():
 
     st.divider()
 
-    # Pantry Quick View & Direct Prompting based on added ingredients
     st.subheader("🛒 Your Pantry Ingredients & Quick Suggestions")
     ingredients = st.session_state.data["ingredients"]
     
@@ -819,7 +774,7 @@ def render_home():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: AI Chef Chat (With Recipe Save Button)
+# PAGE: AI Chef Chat
 # ---------------------------------------------------------------------------
 
 def render_chat():
@@ -851,7 +806,7 @@ def render_chat():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: My Ingredients (Pantry Management)
+# PAGE: My Ingredients
 # ---------------------------------------------------------------------------
 
 def render_ingredients():
