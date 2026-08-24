@@ -432,7 +432,7 @@ USER_AVATAR = "🧑"
 ASSISTANT_AVATAR = "👩‍🍳"
 ACCENT = ACCENT_OPTIONS[st.session_state.accent]
 
-# ---- Dynamic Styling: White Active Nav/Icons & Black Chat/Content Text ----
+# ---- Clean Light Styling with Dynamic Theme Accent & Clear Text/Icons ----
 st.markdown(
     f"""
     <style>
@@ -445,6 +445,7 @@ st.markdown(
     }}
     html, body, .stApp {{ color-scheme: light; background: #ffffff !important; }}
 
+    /* General text readability (Pure Black) */
     .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
     [data-testid="stMarkdownContainer"],
     [data-testid="stMarkdownContainer"] * ,
@@ -463,17 +464,17 @@ st.markdown(
     header[data-testid="stHeader"] button svg,
     header[data-testid="stHeader"] path,
     [data-testid="stToolbar"] path {{
-        fill: #000000 !important;
-        color: #000000 !important;
+        fill: #111827 !important;
+        color: #111827 !important;
         opacity: 1 !important;
     }}
     header[data-testid="stHeader"] a,
     header[data-testid="stHeader"] button {{
-        color: #000000 !important;
+        color: #111827 !important;
         opacity: 1 !important;
     }}
 
-    /* Standard and Secondary Buttons */
+    /* Buttons default style */
     .stButton > button {{
         border-radius: 10px !important;
         border: 1px solid #d1d5db !important;
@@ -485,7 +486,7 @@ st.markdown(
         color: inherit !important;
     }}
     
-    /* Primary Buttons (Kitchen Profile & Navigation Active items) white icons & text */
+    /* Primary buttons & Active Nav items use the selected dynamic Accent color */
     .stButton > button[kind="primary"] {{
         background: {ACCENT} !important;
         border-color: {ACCENT} !important;
@@ -506,6 +507,7 @@ st.markdown(
     input[type="checkbox"], input[type="radio"] {{ accent-color: {ACCENT}; }}
     a {{ color: {ACCENT} !important; }}
 
+    /* Chat message container styling */
     [data-testid="stChatMessage"] {{
         background: #f3f4f6 !important;
         border-radius: 14px;
