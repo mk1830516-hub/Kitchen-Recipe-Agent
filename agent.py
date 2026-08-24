@@ -480,12 +480,29 @@ st.markdown(
         color: #6b7280 !important;
     }}
 
-    header[data-testid="stHeader"] {{
+    header[data-testid="stHeader"] {
         background: #ffffff !important;
         color: #111827 !important;
-    }}
-    [data-testid="stToolbar"] {{ background: #ffffff !important; }}
+    }
+    [data-testid="stToolbar"] { background: #ffffff !important; }
 
+    /* Top-right Toolbar / GitHub Icons strictly Dark/Black */
+    [data-testid="stToolbar"] svg, 
+    [data-testid="stDecoration"] svg,
+    header[data-testid="stHeader"] svg,
+    header[data-testid="stHeader"] button svg,
+    header[data-testid="stHeader"] path,
+    [data-testid="stToolbar"] path,
+    [data-testid="stHeader"] [data-testid="baseButton-header"] svg {
+        fill: #111827 !important;
+        color: #111827 !important;
+        opacity: 1 !important;
+    }
+    header[data-testid="stHeader"] a,
+    header[data-testid="stHeader"] button {
+        color: #111827 !important;
+        opacity: 1 !important;
+    }
     section[data-testid="stSidebar"] {{
         background: #f9fafb !important;
         border-right: 1px solid #e5e7eb !important;
@@ -826,42 +843,71 @@ def render_chat():
         st.rerun()
 
 
-# ---------------------------------------------------------------------------
-# PAGE: My Ingredients
-# ---------------------------------------------------------------------------
-
 def render_ingredients():
     st.title("🥕 My Ingredients & Pantry")
-    st.caption("Add items with an optional quantity and unit, edit them anytime, or delete them.")
+    st.caption("Add or edit your available ingredients so the AI can suggest matching recipes.")
 
-    with st.form("add_ingredient_form", clear_on_submit=True):
+    # Session state initialization for editing
+    if "editing_idx" not in st.session_state:
+        st.session_state.editing_idx = None
+
+    # Editing Form / Add Form
+    editing_index = st.session_state.editing_idx
+    is_editing = editing_index is not None
+
+    if is_editing:
+        st.markdown(f"### ✏️ Editing Ingredient #{editing_index + 1}")
+        current_item = st.session_state.data["ingredients"][editing_index]
+        default_name = current_item["name"]
+        default_qty = float(current_item["qty"])
+        default_unit_idx = UNIT_OPTIONS.index(current_item["unit"]) if current_item["unit"] in UNIT_OPTIONS else 0
+    else:
+        default_name = ""
+        default_qty = 1.0
+        default_unit_idx = 0
+
+    with st.form("ingredient_form", clear_on_submit=True):
         col_name, col_qty, col_unit = st.columns([2, 1, 1])
         with col_name:
-            new_name = st.text_input("Ingredient Name", placeholder="e.g. Tomatoes")
+            new_name = st.text_input("Ingredient Name", value=default_name, placeholder="e.g. Tomatoes, Chicken")
         with col_qty:
-            new_qty = st.number_input("Quantity", min_value=0.0, value=1.0, step=0.5)
+            new_qty = st.number_input("Quantity", min_value=0.0, value=default_qty, step=0.5)
         with col_unit:
-            new_unit = st.selectbox("Unit", options=UNIT_OPTIONS)
+            new_unit = st.selectbox("Unit", options=UNIT_OPTIONS, index=default_unit_idx)
 
-        submitted = st.form_submit_button("➕ Add Ingredient", type="primary")
+        submit_label = "💾 Update Ingredient" if is_editing else "➕ Add Ingredient"
+        submitted = st.form_submit_button(submit_label, type="primary")
+
         if submitted:
             if new_name.strip():
-                st.session_state.data["ingredients"].append({
-                    "name": new_name.strip(),
-                    "qty": new_qty,
-                    "unit": new_unit,
-                })
-                save_data()
-                st.success(f"Added {new_name.strip()}!")
+                if is_editing:
+                    # Update existing ingredient
+                    st.session_state.data["ingredients"][editing_index] = {
+                        "name": new_name.strip(),
+                        "qty": new_qty,
+                        "unit": new_unit
+                    }
+                    st.session_state.editing_idx = None
+                    save_data()
+                    st.success(f"Successfully updated {new_name.strip()}!")
+                else:
+                    # Add new ingredient
+                    st.session_state.data["ingredients"].append(
+                        {"name": new_name.strip(), "qty": new_qty, "unit": new_unit}
+                    )
+                    save_data()
+                    st.success(f"Added {new_name.strip()} to pantry!")
                 st.rerun()
-            else:
-                st.error("Please enter a valid ingredient name.")
+
+    if is_editing:
+        if st.button("❌ Cancel Editing"):
+            st.session_state.editing_idx = None
+            st.rerun()
 
     st.divider()
     ingredients = st.session_state.data["ingredients"]
-
     if not ingredients:
-        st.info("Your pantry is currently empty. Add some ingredients above!")
+        st.info("Your pantry is currently empty.")
     else:
         for idx, ing in enumerate(ingredients):
             c1, c2, c3 = st.columns([3, 1, 1])
@@ -869,14 +915,15 @@ def render_ingredients():
                 st.markdown(f"**{ing['name']}** — {ing['qty']} {ing['unit']}")
             with c2:
                 if st.button("✏️ Edit", key=f"edit_ing_{idx}"):
-                    st.session_state.editing_ing_idx = idx
+                    st.session_state.editing_idx = idx
                     st.rerun()
             with c3:
                 if st.button("🗑️ Delete", key=f"del_ing_{idx}"):
+                    if st.session_state.editing_idx == idx:
+                        st.session_state.editing_idx = None
                     st.session_state.data["ingredients"].pop(idx)
                     save_data()
                     st.rerun()
-
 
 # ---------------------------------------------------------------------------
 # PAGE: Saved Recipes
