@@ -480,11 +480,11 @@ st.markdown(
         color: #6b7280 !important;
     }}
 
-    header[data-testid="stHeader"] {
+    header[data-testid="stHeader"] {{
         background: #ffffff !important;
         color: #111827 !important;
-    }
-    [data-testid="stToolbar"] { background: #ffffff !important; }
+    }}
+    [data-testid="stToolbar"] {{ background: #ffffff !important; }}
 
     /* Top-right Toolbar / GitHub Icons strictly Dark/Black */
     [data-testid="stToolbar"] svg, 
@@ -493,16 +493,16 @@ st.markdown(
     header[data-testid="stHeader"] button svg,
     header[data-testid="stHeader"] path,
     [data-testid="stToolbar"] path,
-    [data-testid="stHeader"] [data-testid="baseButton-header"] svg {
+    header[data-testid="stHeader"] [data-testid="baseButton-header"] svg {{
         fill: #111827 !important;
         color: #111827 !important;
         opacity: 1 !important;
-    }
+    }}
     header[data-testid="stHeader"] a,
-    header[data-testid="stHeader"] button {
+    header[data-testid="stHeader"] button {{
         color: #111827 !important;
         opacity: 1 !important;
-    }
+    }}
     section[data-testid="stSidebar"] {{
         background: #f9fafb !important;
         border-right: 1px solid #e5e7eb !important;
@@ -806,178 +806,103 @@ def render_home():
         ing_list_str = ", ".join([f"{i['qty']} {i['unit']} {i['name']}" for i in ingredients])
         st.info(f"**Available Pantry Items:** {ing_list_str}")
         
-        if st.button("🍳 Cook something using my pantry ingredients!", use_container_width=True, type="primary"):
-            prompt = f"I am cooking for profile '{current_profile}'. My available pantry ingredients are: {ing_list_str}. Please suggest a delicious recipe using these ingredients."
-            ask_agent(prompt)
-            st.rerun()
+        if st.button("🍳 Cook something using these ingredients"):
+            ask_agent(f"I have these ingredients in my pantry: {ing_list_str}. What can I cook with them?")
     else:
-        st.warning("Your pantry is empty! Add ingredients in the 'My Ingredients' section to see them here and get custom pantry-based recipe suggestions.")
-
-    st.subheader("💡 Quick Suggestions for Selected Profile")
-    sug_col1, sug_col2 = st.columns(2)
-    with sug_col1:
-        if st.button(f"🥗 Healthy Breakfast for {current_profile if current_profile != 'Select Profile / Default' else 'Adult'}", use_container_width=True):
-            ask_agent(f"Suggest a healthy breakfast recipe suitable for a {current_profile}.")
-            st.rerun()
-    with sug_col2:
-        if st.button(f"🍲 Easy Dinner Idea for {current_profile if current_profile != 'Select Profile / Default' else 'Adult'}", use_container_width=True):
-            ask_agent(f"Suggest a quick and easy dinner recipe suitable for a {current_profile}.")
-            st.rerun()
+        st.caption("Your pantry is currently empty. Add ingredients in the 'My Ingredients' page to get quick suggestions!")
 
 
 # ---------------------------------------------------------------------------
-# PAGE: AI Chef Chat
+# Main App Router
 # ---------------------------------------------------------------------------
 
-def render_chat():
-    st.title("💬 AI Chef Chat")
-    st.caption("Ask for recipes, ingredient substitutes, or meal plans in any language.")
+def main():
+    page = st.session_state.page
+    if page == "Home":
+        render_home()
+    elif page == "AI Chef Chat":
+        st.subheader("💬 AI Chef Chat")
+        
+        # Display chat messages
+        for msg in st.session_state.messages:
+            avatar = USER_AVATAR if msg["role"] == "user" else ASSISTANT_AVATAR
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg["content"])
 
-    for m in st.session_state.messages:
-        avatar = USER_AVATAR if m["role"] == "user" else ASSISTANT_AVATAR
-        with st.chat_message(m["role"], avatar=avatar):
-            st.markdown(m["content"])
+        # Chat Input
+        if user_input := st.chat_input("Ask your AI Chef anything about food, recipes, or cooking..."):
+            ask_agent(user_input)
+            st.rerun()
 
-    if user_query := st.chat_input("Ask your AI chef anything about food or cooking..."):
-        ask_agent(user_query)
-        st.rerun()
-
-
-def render_ingredients():
-    st.title("🥕 My Ingredients & Pantry")
-    st.caption("Add or edit your available ingredients so the AI can suggest matching recipes.")
-
-    # Session state initialization for editing
-    if "editing_idx" not in st.session_state:
-        st.session_state.editing_idx = None
-
-    # Editing Form / Add Form
-    editing_index = st.session_state.editing_idx
-    is_editing = editing_index is not None
-
-    if is_editing:
-        st.markdown(f"### ✏️ Editing Ingredient #{editing_index + 1}")
-        current_item = st.session_state.data["ingredients"][editing_index]
-        default_name = current_item["name"]
-        default_qty = float(current_item["qty"])
-        default_unit_idx = UNIT_OPTIONS.index(current_item["unit"]) if current_item["unit"] in UNIT_OPTIONS else 0
-    else:
-        default_name = ""
-        default_qty = 1.0
-        default_unit_idx = 0
-
-    with st.form("ingredient_form", clear_on_submit=True):
-        col_name, col_qty, col_unit = st.columns([2, 1, 1])
-        with col_name:
-            new_name = st.text_input("Ingredient Name", value=default_name, placeholder="e.g. Tomatoes, Chicken")
-        with col_qty:
-            new_qty = st.number_input("Quantity", min_value=0.0, value=default_qty, step=0.5)
-        with col_unit:
-            new_unit = st.selectbox("Unit", options=UNIT_OPTIONS, index=default_unit_idx)
-
-        submit_label = "💾 Update Ingredient" if is_editing else "➕ Add Ingredient"
-        submitted = st.form_submit_button(submit_label, type="primary")
-
-        if submitted:
-            if new_name.strip():
-                if is_editing:
-                    # Update existing ingredient
-                    st.session_state.data["ingredients"][editing_index] = {
-                        "name": new_name.strip(),
-                        "qty": new_qty,
-                        "unit": new_unit
-                    }
-                    st.session_state.editing_idx = None
-                    save_data()
-                    st.success(f"Successfully updated {new_name.strip()}!")
-                else:
-                    # Add new ingredient
-                    st.session_state.data["ingredients"].append(
-                        {"name": new_name.strip(), "qty": new_qty, "unit": new_unit}
-                    )
-                    save_data()
-                    st.success(f"Added {new_name.strip()} to pantry!")
+    elif page == "My Ingredients":
+        st.subheader("🥕 My Pantry Ingredients")
+        st.write("Manage your available ingredients here.")
+        
+        # Simple add form
+        with st.form("add_ingredient_form"):
+            col_name, col_qty, col_unit = st.columns([3, 1, 1])
+            with col_name:
+                ing_name = st.text_input("Ingredient Name", placeholder="e.g. Tomatoes")
+            with col_qty:
+                ing_qty = st.number_input("Quantity", min_value=0.1, value=1.0, step=0.1)
+            with col_unit:
+                ing_unit = st.selectbox("Unit", UNIT_OPTIONS)
+            
+            submitted = st.form_submit_button("Add Ingredient")
+            if submitted and ing_name.strip():
+                st.session_state.data["ingredients"].append({
+                    "name": ing_name.strip(),
+                    "qty": ing_qty,
+                    "unit": ing_unit
+                })
+                save_data()
+                st.success(f"Added {ing_qty} {ing_unit} of {ing_name.strip()} to pantry!")
                 st.rerun()
 
-    if is_editing:
-        if st.button("❌ Cancel Editing"):
-            st.session_state.editing_idx = None
-            st.rerun()
+        # Display current pantry list with delete option
+        st.markdown("### Current Pantry Inventory")
+        ingredients = st.session_state.data["ingredients"]
+        if not ingredients:
+            st.info("Pantry is empty.")
+        else:
+            for idx, item in enumerate(ingredients):
+                col_item, col_del = st.columns([5, 1])
+                with col_item:
+                    st.write(f"- **{item['name']}**: {item['qty']} {item['unit']}")
+                with col_del:
+                    if st.button("Delete", key=f"del_ing_{idx}"):
+                        st.session_state.data["ingredients"].pop(idx)
+                        save_data()
+                        st.rerun()
 
-    st.divider()
-    ingredients = st.session_state.data["ingredients"]
-    if not ingredients:
-        st.info("Your pantry is currently empty.")
-    else:
-        for idx, ing in enumerate(ingredients):
-            c1, c2, c3 = st.columns([3, 1, 1])
-            with c1:
-                st.markdown(f"**{ing['name']}** — {ing['qty']} {ing['unit']}")
-            with c2:
-                if st.button("✏️ Edit", key=f"edit_ing_{idx}"):
-                    st.session_state.editing_idx = idx
-                    st.rerun()
-            with c3:
-                if st.button("🗑️ Delete", key=f"del_ing_{idx}"):
-                    if st.session_state.editing_idx == idx:
-                        st.session_state.editing_idx = None
-                    st.session_state.data["ingredients"].pop(idx)
-                    save_data()
-                    st.rerun()
-
-# ---------------------------------------------------------------------------
-# PAGE: Saved Recipes
-# ---------------------------------------------------------------------------
-
-def render_saved():
-    st.title("❤️ Saved Recipes")
-    st.caption("Your favorite recipes bookmarked for quick access.")
-
-    saved = st.session_state.data["saved_recipes"]
-    if not saved:
-        st.info("No saved recipes yet. Ask the AI Chef Chat for a recipe and save it!")
-    else:
-        for idx, rec in enumerate(saved):
-            with st.expander(f"📖 {rec.get('title', 'Recipe')}"):
-                st.markdown(rec.get("content", ""))
-                if st.button("🗑️ Remove", key=f"del_rec_{idx}"):
+    elif page == "Saved Recipes":
+        st.subheader("❤️ Saved Recipes")
+        saved = st.session_state.data["saved_recipes"]
+        if not saved:
+            st.info("No saved recipes yet. Ask your AI Chef to give you a recipe and save it!")
+        else:
+            for idx, recipe in enumerate(saved):
+                st.markdown(f"### {recipe.get('title', 'Recipe')}")
+                st.markdown(recipe.get('content', ''))
+                if st.button("Remove", key=f"del_saved_{idx}"):
                     st.session_state.data["saved_recipes"].pop(idx)
                     save_data()
                     st.rerun()
+                st.divider()
+
+    elif page == "Theme Customize":
+        st.subheader("🎨 Theme Customize")
+        st.write("Choose your preferred accent color:")
+        
+        selected_accent = st.selectbox(
+            "Accent Color",
+            options=list(ACCENT_OPTIONS.keys()),
+            index=list(ACCENT_OPTIONS.keys()).index(st.session_state.accent)
+        )
+        if selected_accent != st.session_state.accent:
+            st.session_state.accent = selected_accent
+            st.rerun()
 
 
-# ---------------------------------------------------------------------------
-# PAGE: Theme Customize
-# ---------------------------------------------------------------------------
-
-def render_theme():
-    st.subheader("🎨 Theme Customize")
-    st.caption("Pick an accent color to instantly re-theme the entire application.")
-
-    cols = st.columns(len(ACCENT_OPTIONS))
-    for col, (name, hex_val) in zip(cols, ACCENT_OPTIONS.items()):
-        with col:
-            is_selected = st.session_state.accent == name
-            label = f"✅ {name}" if is_selected else name
-            if st.button(label, key=f"accent_{name}", use_container_width=True):
-                st.session_state.accent = name
-                st.rerun()
-            st.markdown(
-                f"""<div style="height:26px; border-radius:8px; background:{hex_val}; margin-top:4px;"></div>""",
-                unsafe_allow_html=True,
-            )
-
-# ---------------------------------------------------------------------------
-# Main Router
-# ---------------------------------------------------------------------------
-
-if st.session_state.page == "Home":
-    render_home()
-elif st.session_state.page == "AI Chef Chat":
-    render_chat()
-elif st.session_state.page == "My Ingredients":
-    render_ingredients()
-elif st.session_state.page == "Saved Recipes":
-    render_saved()
-elif st.session_state.page == "Theme Customize":
-    render_theme()
+if __name__ == "__main__":
+    main()
