@@ -625,12 +625,6 @@ st.markdown(
         color: #111827 !important;
         opacity: 1 !important;
     }
-
-    section[data-testid="stSidebar"] {{
-        background: #f9fafb !important;
-        border-right: 1px solid #e5e7eb !important;
-    }}
-
     .stButton > button {{
         border-radius: 10px !important;
         border: 1px solid #d1d5db !important;
