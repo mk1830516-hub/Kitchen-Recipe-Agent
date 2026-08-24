@@ -879,25 +879,37 @@ def render_ingredients():
 
 
 # ---------------------------------------------------------------------------
-# PAGE: Saved Recipes
+# PAGE: AI Chef Chat (With Fixed Recipe Save Button)
 # ---------------------------------------------------------------------------
 
-def render_saved():
-    st.title("❤️ Saved Recipes")
-    st.caption("Your favorite recipes bookmarked for quick access.")
+def render_chat():
+    st.title("💬 AI Chef Chat")
+    st.caption("Ask for recipes, ingredients, or meal plans.")
 
-    saved = st.session_state.data["saved_recipes"]
-    if not saved:
-        st.info("No saved recipes yet. Ask the AI Chef Chat for a recipe and save it!")
-    else:
-        for idx, rec in enumerate(saved):
-            with st.expander(f"📖 {rec.get('title', 'Recipe')}"):
-                st.markdown(rec.get("content", ""))
-                if st.button("🗑️ Remove", key=f"del_rec_{idx}"):
-                    st.session_state.data["saved_recipes"].pop(idx)
-                    save_data()
-                    st.rerun()
+    for idx, m in enumerate(st.session_state.messages):
+        avatar = USER_AVATAR if m["role"] == "user" else ASSISTANT_AVATAR
+        with st.chat_message(m["role"], avatar=avatar):
+            st.markdown(m["content"])
+            
+            # Agar message assistant ka hai toh save button show karo
+            if m["role"] == "assistant":
+                if st.button("❤️ Save Recipe", key=f"save_chat_rec_{idx}"):
+                    recipe_title = f"Recipe from Chat ({idx})"
+                    # Check karo ke already saved toh nahi hai
+                    existing = [r["content"] for r in st.session_state.data["saved_recipes"]]
+                    if m["content"] not in existing:
+                        st.session_state.data["saved_recipes"].append({
+                            "title": recipe_title,
+                            "content": m["content"]
+                        })
+                        save_data()
+                        st.success("Recipe successfully saved to 'Saved Recipes'!")
+                    else:
+                        st.info("This recipe is already saved.")
 
+    if user_query := st.chat_input("Ask your AI chef anything..."):
+        ask_agent(user_query)
+        st.rerun()
 
 # ---------------------------------------------------------------------------
 # PAGE: Theme Customize
